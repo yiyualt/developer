@@ -11,5 +11,6 @@ own use case.
    :caption: Examples
 
    simple-qa
+   json-output
 
    

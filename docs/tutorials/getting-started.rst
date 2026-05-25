@@ -87,4 +87,6 @@ What's Next?
 -------------
 
 - Read :doc:`/notes/chain-design-philosophy` to understand *why* this design
+- Read :doc:`/notes/output-parsing-philosophy` to learn why LLM output needs parsing
 - See :doc:`/examples/simple-qa` for a complete runnable example
+- See :doc:`/examples/json-output` for parsing LLM output into structured data

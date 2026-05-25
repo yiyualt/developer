@@ -15,7 +15,7 @@ The `docs/index.rst` SHALL serve as the top-level toctree entry that links to th
 - **THEN** the page displays navigation links to Tutorials, Notes, Examples, and API Reference sections
 
 ### Requirement: Placeholder content in each layer
-Each content layer's `index.rst` SHALL contain a descriptive title and content describing the layer's purpose. The tutorials section SHALL include a getting-started tutorial page with both FakeLLM and real OpenAI usage examples. The notes section SHALL include a chain-design-philosophy note page with discussion of FakeLLM vs real LLM. The examples section SHALL include a simple-qa example page.
+Each content layer SHALL contain descriptive content. The tutorials section SHALL include a getting-started tutorial with parser usage examples. The notes section SHALL include chain-design-philosophy and output-parsing-philosophy pages. The examples section SHALL include a simple-qa example and a json-output example.
 
 #### Scenario: Tutorials index links to getting-started
 - **WHEN** developer opens the Tutorials section in built documentation
@@ -24,6 +24,14 @@ Each content layer's `index.rst` SHALL contain a descriptive title and content d
 #### Scenario: Notes index links to chain-design-philosophy
 - **WHEN** developer opens the Notes section in built documentation
 - **THEN** the page displays a toctree link to "Chain Design Philosophy" note
+
+#### Scenario: Notes index links to output-parsing-philosophy
+- **WHEN** developer opens the Notes section in built documentation
+- **THEN** the page displays a toctree link to "Output Parsing Philosophy" note
+
+#### Scenario: Examples index links to json-output
+- **WHEN** developer opens the Examples section in built documentation
+- **THEN** the page displays a toctree link to "JSON Output" example
 
 ### Requirement: API Reference autodoc entry
 The `docs/api/` directory SHALL contain an `langchain.rst` file with an `.. automodule:: langchain` directive that serves as the autodoc entry point for generating API documentation from Python docstrings.

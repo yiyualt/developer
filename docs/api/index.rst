@@ -12,3 +12,4 @@ in LangChain, generated automatically from Python docstrings.
    prompts
    llms
    chains
+   output_parsers

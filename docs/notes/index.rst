@@ -12,5 +12,6 @@ the way they do, similar to PyTorch's "Notes" tradition.
    :caption: Notes
 
    chain-design-philosophy
+   output-parsing-philosophy
 
    
