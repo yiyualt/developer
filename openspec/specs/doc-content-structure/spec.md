@@ -15,7 +15,7 @@ The `docs/index.rst` SHALL serve as the top-level toctree entry that links to th
 - **THEN** the page displays navigation links to Tutorials, Notes, Examples, and API Reference sections
 
 ### Requirement: Placeholder content in each layer
-Each content layer SHALL contain descriptive content. The tutorials section SHALL include a getting-started tutorial with parser usage examples. The notes section SHALL include chain-design-philosophy and output-parsing-philosophy pages. The examples section SHALL include a simple-qa example and a json-output example.
+Each content layer SHALL contain descriptive content. The tutorials section SHALL include a getting-started tutorial with parser usage examples. The notes section SHALL include chain-design-philosophy, output-parsing-philosophy, and sequential-chain-design pages. The examples section SHALL include simple-qa, json-output, and multi-step examples.
 
 #### Scenario: Tutorials index links to getting-started
 - **WHEN** developer opens the Tutorials section in built documentation
