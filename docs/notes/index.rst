@@ -13,5 +13,6 @@ the way they do, similar to PyTorch's "Notes" tradition.
 
    chain-design-philosophy
    output-parsing-philosophy
+   sequential-chain-design
 
    

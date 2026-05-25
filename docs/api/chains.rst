@@ -14,3 +14,12 @@ LLMChain
    :undoc-members:
    :show-inheritance:
    :special-members: __init__
+
+SequentialChain
+---------------
+
+.. autoclass:: langchain.chains.sequential.SequentialChain
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__

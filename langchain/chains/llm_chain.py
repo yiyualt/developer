@@ -43,6 +43,21 @@ class LLMChain:
             {'topic': 'Python', 'description': 'A programming language'}
     """
 
+    @property
+    def output_keys(self) -> List[str]:
+        """Keys this chain produces in dict-format output.
+
+        When no ``output_parser`` is set, defaults to ``["text"]``.
+        When a parser is configured that returns a dict, reflects the
+        dict's expected keys.
+        """
+        if self.output_parser is not None:
+            # JsonOutputParser and similar parsers that return dicts
+            # expose their expected keys via output_keys attribute
+            if hasattr(self.output_parser, "output_keys"):
+                return self.output_parser.output_keys
+        return ["text"]
+
     def __init__(
         self,
         prompt: PromptTemplate,
@@ -73,6 +88,34 @@ class LLMChain:
         if self.output_parser:
             return self.output_parser.parse(result)
         return result
+
+    def _call_internal(self, **kwargs: str) -> Dict[str, Any]:
+        """Execute the chain and return output as a dict.
+
+        Unlike ``run()`` which returns a bare value for convenience,
+        ``_call_internal()`` always returns a dict keyed by
+        ``output_keys``. This enables SequentialChain to merge outputs
+        into subsequent chain inputs.
+
+        Args:
+            **kwargs: Input variables matching the PromptTemplate's
+                ``input_variables``.
+
+        Returns:
+            A dict with keys from ``output_keys`` and values from
+            the LLM response (parsed or raw).
+        """
+        formatted = self.prompt.format(**kwargs)
+        responses = self.llm.generate([formatted])
+        result = responses[0]
+        if self.output_parser:
+            parsed = self.output_parser.parse(result)
+            if isinstance(parsed, dict):
+                return parsed
+            # Parser returned a non-dict value; wrap it under the
+            # default output key
+            return {self.output_keys[0]: parsed}
+        return {"text": result}
 
     def apply(self, input_list: List[Dict[str, str]]) -> List[Any]:
         """Execute the chain with multiple inputs and return a list of results.

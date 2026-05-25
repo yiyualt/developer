@@ -12,5 +12,6 @@ own use case.
 
    simple-qa
    json-output
+   multi-step
 
    
