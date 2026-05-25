@@ -1,0 +1,16 @@
+Notes
+=====
+
+In-depth explanations of design philosophy, internal mechanics, and
+architectural decisions.
+
+These notes go beyond the API reference to explain *why* things work
+the way they do, similar to PyTorch's "Notes" tradition.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Notes
+
+   chain-design-philosophy
+
+   

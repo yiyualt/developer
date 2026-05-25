@@ -1,0 +1,10 @@
+.venv/
+.env
+docs/_build/
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+.ipynb_checkpoints/
+*.ipynb
+docs/openspec/

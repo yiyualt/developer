@@ -1,0 +1,16 @@
+## MODIFIED Requirements
+
+### Requirement: Placeholder content in each layer
+Each content layer's `index.rst` SHALL contain a descriptive title and content describing the layer's purpose. The tutorials section SHALL include a getting-started tutorial page. The notes section SHALL include a chain-design-philosophy note page. The examples section SHALL include a simple-qa example page.
+
+#### Scenario: Tutorials index links to getting-started
+- **WHEN** developer opens the Tutorials section in built documentation
+- **THEN** the page displays a toctree link to "Getting Started" tutorial
+
+#### Scenario: Notes index links to chain-design-philosophy
+- **WHEN** developer opens the Notes section in built documentation
+- **THEN** the page displays a toctree link to "Chain Design Philosophy" note
+
+#### Scenario: Examples index links to simple-qa
+- **WHEN** developer opens the Examples section in built documentation
+- **THEN** the page displays a toctree link to "Simple Q&A" example
