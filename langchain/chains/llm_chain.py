@@ -9,6 +9,7 @@ and returns the result.
 from typing import Any, Dict, List, Optional
 
 from langchain.llms.base import LLM
+from langchain.memory.base import Memory
 from langchain.output_parsers.base import OutputParser
 from langchain.prompts.prompt import PromptTemplate
 
@@ -63,16 +64,18 @@ class LLMChain:
         prompt: PromptTemplate,
         llm: LLM,
         output_parser: Optional[OutputParser] = None,
+        memory: Optional[Memory] = None,
     ) -> None:
         self.prompt = prompt
         self.llm = llm
         self.output_parser = output_parser
+        self.memory = memory
 
     def run(self, **kwargs: str) -> Any:
         """Execute the chain with a single input and return one result.
 
-        If ``output_parser`` is set, the LLM response is parsed before
-        returning. Otherwise returns the raw response string.
+        If ``memory`` is set, conversation history is prepended to the
+        prompt and the interaction is saved after execution.
 
         Args:
             **kwargs: Input variables matching the PromptTemplate's
@@ -82,9 +85,24 @@ class LLMChain:
             A parsed result (if output_parser is set) or a raw response
             string (if not).
         """
-        formatted = self.prompt.format(**kwargs)
+        history = self.memory.load_context() if self.memory else ""
+        if history:
+            formatted = history + "\n" + self.prompt.format(**kwargs)
+        else:
+            formatted = self.prompt.format(**kwargs)
         responses = self.llm.generate([formatted])
         result = responses[0]
+
+        if self.memory:
+            output_dict = {"text": result}
+            if self.output_parser:
+                parsed = self.output_parser.parse(result)
+                if isinstance(parsed, dict):
+                    output_dict = parsed
+                else:
+                    output_dict = {self.output_keys[0]: parsed}
+            self.memory.save_context(kwargs, output_dict)
+
         if self.output_parser:
             return self.output_parser.parse(result)
         return result

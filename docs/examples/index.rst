@@ -13,5 +13,7 @@ own use case.
    simple-qa
    json-output
    multi-step
+   agent-example
+   memory-example
 
    

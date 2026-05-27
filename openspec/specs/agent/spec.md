@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Agent ReAct execution loop
-Agent SHALL execute a ReAct (Reasoning + Acting) loop: in each iteration, the LLM generates a Thought and either an Action (tool call) or a Final Answer. If an Action is generated, Agent calls the corresponding Tool, receives an Observation, and appends it to the prompt for the next iteration. If a Final Answer is generated, the loop terminates.
+Agent SHALL execute a ReAct (Reasoning + Acting) loop: in each iteration, the LLM generates a Thought and either an Action (tool call) or a Final Answer. If an Action is generated, Agent calls the corresponding Tool, receives an Observation, and appends it to the prompt for the next iteration. If a Final Answer is generated, the loop terminates. Agent SHALL also accept an optional `memory` parameter. When memory is set, `run()` SHALL load conversation history via `memory.load_context()` and include it in the initial prompt, and save the final question+answer via `memory.save_context()` after execution.
 
 #### Scenario: Agent resolves question using a tool
 - **WHEN** Agent is created with an LLM and a Calculator tool, then `run(question="What is 2 + 3?")` is called

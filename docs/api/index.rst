@@ -13,3 +13,6 @@ in LangChain, generated automatically from Python docstrings.
    llms
    chains
    output_parsers
+   tools
+   agents
+   memory
