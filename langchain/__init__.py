@@ -2,6 +2,7 @@
 
 from langchain.agents.agent import Agent
 from langchain.chains.llm_chain import LLMChain
+from langchain.chains.router import ChainDestination, LLMRouterChain, RouterChain
 from langchain.chains.retrieval import RetrievalChain
 from langchain.chains.sequential import SequentialChain
 from langchain.document_loaders.base import DocumentLoader
@@ -29,6 +30,7 @@ from langchain.vectorstores.simple import SimpleVectorStore
 
 __all__ = [
     "Agent", "LLMChain", "RetrievalChain", "SequentialChain",
+    "RouterChain", "LLMRouterChain", "ChainDestination",
     "LLM", "OpenAI", "PromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
     "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool",

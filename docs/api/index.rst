@@ -20,3 +20,4 @@ in LangChain, generated automatically from Python docstrings.
    text-splitters
    embeddings
    vectorstores
+   router

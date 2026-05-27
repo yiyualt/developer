@@ -17,5 +17,6 @@ the way they do, similar to PyTorch's "Notes" tradition.
    agent-design
    memory-design
    retrieval-philosophy
+   router-philosophy
 
    
