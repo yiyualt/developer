@@ -1,0 +1,23 @@
+LangChain is an open-source framework designed to simplify the creation of applications using large language models (LLMs). It was created by Harrison Chase and launched in late 2022. The framework provides a standardized interface for chaining together different LLM capabilities, making it easier to build complex applications.
+
+The core philosophy of LangChain is composability — the idea that you can build powerful applications by combining simple, reusable components. The fundamental primitive is the Chain: prompt + LLM = chain. This simple equation enables everything from basic question-answering to complex multi-step reasoning pipelines.
+
+LangChain's architecture is organized around several key abstractions:
+
+1. Prompts: PromptTemplate provides a structured way to format inputs for LLMs, supporting variable substitution and template reuse.
+
+2. Chains: LLMChain composes a PromptTemplate with an LLM. SequentialChain enables multi-step reasoning by passing outputs from one chain as inputs to the next, using a key-based data flow system.
+
+3. Agents: The ReAct (Reasoning + Acting) pattern allows LLMs to autonomously select and execute tools. Each iteration produces a Thought, optionally an Action (tool call), and receives an Observation, continuing until a Final Answer is reached.
+
+4. Memory: ConversationBufferMemory stores complete chat history, while ConversationBufferWindowMemory limits history to the most recent K rounds, keeping prompts bounded.
+
+5. Retrieval: RAG (Retrieval-Augmented Generation) breaks the boundary of LLM training data by injecting external knowledge at runtime. The pipeline loads documents, splits them into chunks, embeds chunks into vectors, stores them in a VectorStore, retrieves relevant chunks for a query, and passes them as context to the LLM.
+
+The framework supports multiple LLM providers through a common interface. The base LLM class defines an abstract generate() method that takes a list of prompts and returns a list of responses. Provider-specific implementations (like OpenAI, DashScope) handle the API details.
+
+Output parsing is another important capability. OutputParser transforms raw LLM responses into structured data — JsonOutputParser returns dicts, ListOutputParser returns lists. This enables chains to produce machine-readable output that can feed into downstream processes.
+
+Vector stores enable similarity search over embedded documents. SimpleVectorStore uses numpy cosine similarity for in-memory retrieval. FAISS and ChromaDB are available for production-scale deployments with persistent storage and faster search.
+
+Text splitting is critical for RAG quality. The TextSplitter cuts documents into chunks of a given size with optional overlap between consecutive chunks, preserving context across boundaries. Future versions introduce RecursiveCharacterTextSplitter for better sentence-level splitting.

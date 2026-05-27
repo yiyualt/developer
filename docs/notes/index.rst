@@ -16,5 +16,6 @@ the way they do, similar to PyTorch's "Notes" tradition.
    sequential-chain-design
    agent-design
    memory-design
+   retrieval-philosophy
 
    

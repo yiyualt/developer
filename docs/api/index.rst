@@ -16,3 +16,7 @@ in LangChain, generated automatically from Python docstrings.
    tools
    agents
    memory
+   document-loaders
+   text-splitters
+   embeddings
+   vectorstores

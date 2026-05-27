@@ -15,5 +15,6 @@ own use case.
    multi-step
    agent-example
    memory-example
+   retrieval-example
 
    

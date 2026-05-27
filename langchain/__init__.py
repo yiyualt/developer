@@ -2,7 +2,13 @@
 
 from langchain.agents.agent import Agent
 from langchain.chains.llm_chain import LLMChain
+from langchain.chains.retrieval import RetrievalChain
 from langchain.chains.sequential import SequentialChain
+from langchain.document_loaders.base import DocumentLoader
+from langchain.document_loaders.text import TextLoader
+from langchain.embeddings.base import Embeddings
+from langchain.embeddings.dashscope import DashScopeEmbeddings
+from langchain.embeddings.local import LocalEmbeddings
 from langchain.llms.base import LLM
 from langchain.llms.openai import OpenAI
 from langchain.memory.base import Memory
@@ -12,15 +18,24 @@ from langchain.output_parsers.base import OutputParser
 from langchain.output_parsers.json import JsonOutputParser
 from langchain.output_parsers.list import ListOutputParser
 from langchain.prompts.prompt import PromptTemplate
+from langchain.schema import Document
+from langchain.text_splitters.base import TextSplitter
 from langchain.tools.base import Tool
 from langchain.tools.calculator import CalculatorTool
 from langchain.tools.search import SearchTool
 from langchain.tools.python_repl import PythonREPLTool
+from langchain.vectorstores.base import VectorStore
+from langchain.vectorstores.simple import SimpleVectorStore
 
 __all__ = [
-    "Agent", "LLMChain", "SequentialChain", "LLM", "OpenAI", "PromptTemplate",
+    "Agent", "LLMChain", "RetrievalChain", "SequentialChain",
+    "LLM", "OpenAI", "PromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
     "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool",
     "Memory", "ConversationBufferMemory", "ConversationBufferWindowMemory",
+    "Document", "DocumentLoader", "TextLoader",
+    "TextSplitter",
+    "Embeddings", "DashScopeEmbeddings", "LocalEmbeddings",
+    "VectorStore", "SimpleVectorStore",
 ]
 __version__ = "0.0.1"
