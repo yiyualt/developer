@@ -32,3 +32,12 @@ ConversationBufferWindowMemory
    :undoc-members:
    :show-inheritance:
    :special-members: __init__
+
+ConversationSummaryMemory
+-------------------------
+
+.. autoclass:: langchain.memory.summary.ConversationSummaryMemory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__

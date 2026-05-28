@@ -32,10 +32,11 @@ PyTorch 风格文档体系：
 6. **Memory** — Memory ABC, ConversationBufferMemory, ConversationBufferWindowMemory, LLMChain/Agent 集成
 7. **Retrieval / RAG** — Document, DocumentLoader, TextLoader, TextSplitter, Embeddings, DashScopeEmbeddings, LocalEmbeddings, VectorStore, SimpleVectorStore, RetrievalChain
 8. **Router Chain** — RouterChain ABC, LLMRouterChain, ChainDestination, Dynamic Option Injection 模式
+9. **ConversationSummaryMemory** — LLM 增量摘要压缩, Agent 保存完整推理过程
+10. **Callback / Tracing** — CallbackHandler ABC, StdOutCallbackHandler, LLMChain/Agent/Tool 回调集成
 
 下一步（按 LangChain 历史演进顺序）：
-9. **Agent with Memory** — Agent 长期记忆 + 工具记忆
-10. **Callback / Tracing** — 执行追踪，中间步骤可见性
+11. **Streaming / Async** — LLM 流式输出，Agent 实时推理流
 
 ## OpenSpec 工作流
 

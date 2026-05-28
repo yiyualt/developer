@@ -1,11 +1,15 @@
 ## ADDED Requirements
 
 ### Requirement: Memory ABC interface
-Memory SHALL be an abstract base class defining three methods: `save_context(inputs: dict, outputs: dict)` to store a round of interaction, `load_context() -> str` to return formatted conversation history, and `clear()` to reset stored history.
+Memory SHALL be an abstract base class defining three methods: `save_context(inputs: dict, outputs: dict)` to store a round of interaction, `load_context() -> str` to return formatted conversation history, and `clear()` to reset stored history. ConversationSummaryMemory extends this interface by accepting an `llm` parameter and maintaining an internal `_summary` state alongside `_buffer`, enabling LLM-powered history compression.
 
 #### Scenario: Subclass implements Memory
 - **WHEN** a subclass of Memory is created with save_context, load_context, and clear methods
 - **THEN** it can save an interaction via `save_context({"question": "hi"}, {"text": "hello"})`, retrieve formatted history via `load_context()` returning `"Human: hi\nAI: hello"`, and reset via `clear()`
+
+#### Scenario: SummaryMemory is a valid Memory implementation
+- **WHEN** ConversationSummaryMemory is created with an LLM instance
+- **THEN** it can be used as a `memory` parameter for LLMChain and Agent, just like ConversationBufferMemory
 
 ### Requirement: ConversationBufferMemory
 ConversationBufferMemory SHALL store the complete conversation history as a list of Human/AI message pairs. `load_context()` SHALL return all stored messages formatted as alternating `"Human: {input}\nAI: {output}"` lines.

@@ -8,6 +8,7 @@ and returns the result.
 
 from typing import Any, Dict, List, Optional
 
+from langchain.callbacks.base import CallbackHandler
 from langchain.llms.base import LLM
 from langchain.memory.base import Memory
 from langchain.output_parsers.base import OutputParser
@@ -65,11 +66,18 @@ class LLMChain:
         llm: LLM,
         output_parser: Optional[OutputParser] = None,
         memory: Optional[Memory] = None,
+        callbacks: Optional[List[CallbackHandler]] = None,
     ) -> None:
         self.prompt = prompt
         self.llm = llm
         self.output_parser = output_parser
         self.memory = memory
+        self.callbacks = callbacks or []
+
+    def _fire(self, event: str, **kwargs) -> None:
+        """Invoke an event on all registered callback handlers."""
+        for handler in self.callbacks:
+            getattr(handler, event)(**kwargs)
 
     def run(self, **kwargs: str) -> Any:
         """Execute the chain with a single input and return one result.
@@ -85,27 +93,37 @@ class LLMChain:
             A parsed result (if output_parser is set) or a raw response
             string (if not).
         """
-        history = self.memory.load_context() if self.memory else ""
-        if history:
-            formatted = history + "\n" + self.prompt.format(**kwargs)
-        else:
-            formatted = self.prompt.format(**kwargs)
-        responses = self.llm.generate([formatted])
-        result = responses[0]
+        try:
+            self._fire("on_chain_start", inputs=kwargs)
+            history = self.memory.load_context() if self.memory else ""
+            if history:
+                formatted = history + "\n" + self.prompt.format(**kwargs)
+            else:
+                formatted = self.prompt.format(**kwargs)
+            self._fire("on_llm_start", prompt=formatted)
+            responses = self.llm.generate([formatted])
+            result = responses[0]
+            self._fire("on_llm_end", response=result)
 
-        if self.memory:
-            output_dict = {"text": result}
+            if self.memory:
+                output_dict = {"text": result}
+                if self.output_parser:
+                    parsed = self.output_parser.parse(result)
+                    if isinstance(parsed, dict):
+                        output_dict = parsed
+                    else:
+                        output_dict = {self.output_keys[0]: parsed}
+                self.memory.save_context(kwargs, output_dict)
+
             if self.output_parser:
-                parsed = self.output_parser.parse(result)
-                if isinstance(parsed, dict):
-                    output_dict = parsed
-                else:
-                    output_dict = {self.output_keys[0]: parsed}
-            self.memory.save_context(kwargs, output_dict)
-
-        if self.output_parser:
-            return self.output_parser.parse(result)
-        return result
+                output = self.output_parser.parse(result)
+            else:
+                output = result
+            self._fire("on_chain_end", output=output)
+            return output
+        except Exception as e:
+            self._fire("on_error", error=e)
+            raise
 
     def _call_internal(self, **kwargs: str) -> Dict[str, Any]:
         """Execute the chain and return output as a dict.

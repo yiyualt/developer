@@ -23,43 +23,58 @@ Every Memory implementation exposes three methods:
 The history format is alternating ``Human: ...`` and ``AI: ...``
 lines, which LLMs naturally understand as a conversation log.
 
-Buffer vs Window
------------------
+Buffer vs Window vs Summary
+----------------------------
 
-Two implementations cover the core tradeoff: completeness vs length.
+Three implementations cover different tradeoffs:
 
 .. code-block:: text
 
-   ConversationBufferMemory          ConversationBufferWindowMemory
-   ──────────────────────────────    ──────────────────────────────────
-   Stores ALL history                 Stores ALL, returns last K rounds
-   load_context() → everything        load_context() → last K rounds
-   Prompt grows indefinitely          Prompt stays bounded
+   BufferMemory         WindowMemory             SummaryMemory
+   ────────────────     ──────────────────       ──────────────────
+   Stores ALL history   Stores ALL, returns       Compresses old
+                        last K rounds             rounds into summary
+   Returns everything   Returns last K            Returns summary +
+                        rounds                    recent rounds
+   Prompt grows         Prompt bounded            Prompt bounded
+   indefinitely         (discards old info)       (preserves key facts)
+   No LLM calls         No LLM calls              LLM call per
+                        needed                    compression
 
-   Use Buffer when:                   Use Window when:
-   - Short conversations              - Long or repeated conversations
-   - Full context needed              - Only recent context matters
+   Use Buffer when:     Use Window when:         Use Summary when:
+   - Short chats        - Only recent context     - Long conversations
+   - Full context       matters                   - Key facts must survive
+     needed              - Can afford to lose      - Prompt budget is tight
+                          older details
 
-Integration with LLMChain
---------------------------
-
-When ``LLMChain`` is created with a ``memory`` parameter, ``run()``
-automatically:
-
-1. Loads conversation history via ``memory.load_context()``
-2. Prepends it to the formatted prompt
-3. After execution, saves the input/output via ``memory.save_context()``
-
-Without memory, ``run()`` behaves exactly as before — fully
-stateless. This is backward-compatible.
+   SummaryMemory needs an LLM instance — the compression quality
+   depends on the LLM's ability to preserve key information.
+   Each compression adds an extra LLM call, so it's best used
+   when conversations are genuinely long.
 
 Integration with Agent
 ----------------------
 
 Agent also accepts a ``memory`` parameter. The loaded history is
 prepended to the ReAct scratchpad, giving the LLM context from
-prior conversations. After the loop finishes, the question and
-final answer are saved to memory.
+prior conversations.
+
+After the loop finishes, the full reasoning process is saved to
+memory — not just the Final Answer. This includes all Thoughts,
+Actions, Observations, and the Final Answer, giving future
+conversations visibility into the Agent's reasoning:
+
+.. code-block:: text
+
+   Memory saves:
+   Human: What is Paris's population?
+   AI: Thought: I should search for this
+       Action: search[Paris population]
+       Observation: 2.2 million
+       Final Answer: Paris has about 2.2 million people
+
+   Next conversation can see what the Agent searched for
+   and what it learned — avoiding redundant tool calls.
 
 Memory is distinct from the Agent's ReAct scratchpad: the
 scratchpad is a single-loop temporary log, while Memory persists

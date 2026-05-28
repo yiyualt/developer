@@ -16,6 +16,7 @@ own use case.
    agent-example
    memory-example
    retrieval-example
+   callback-example
    router-example
 
    

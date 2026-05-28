@@ -14,7 +14,7 @@ class CalculatorTool(Tool):
     name = "calculator"
     description = "Useful for arithmetic calculations. Input should be a math expression like '2+3' or '15*4'."
 
-    def run(self, input: str) -> str:
+    def _run(self, input: str) -> str:
         try:
             result = eval(input, {"__builtins__": {}}, {})
             return str(result)

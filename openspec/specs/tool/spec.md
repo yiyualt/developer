@@ -1,11 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Tool ABC interface
-Tool SHALL be an abstract base class defining three attributes: `name` (a unique string identifier), `description` (a short description for LLM tool selection), and `run(input: str) -> str` (the execution method).
+Tool SHALL be an abstract base class defining three attributes: `name` (a unique string identifier), `description` (a short description for LLM tool selection), and `run(input: str) -> str` (the execution method). Tool SHALL accept an optional `callbacks` parameter (list of CallbackHandler instances). When callbacks are provided, Tool SHALL invoke `on_tool_start` before execution with the tool name and input, invoke `on_tool_end` after execution with the output, and invoke `on_error` if execution raises an exception.
 
 #### Scenario: Tool subclass implementation
 - **WHEN** a subclass of Tool is created with name="calculator", description="Useful for arithmetic", and run() that evaluates math expressions
 - **THEN** the tool can be invoked via `run("2+3")` returning "5"
+
+#### Scenario: Tool with callbacks fires lifecycle events
+- **WHEN** CalculatorTool with callbacks=[handler] calls `run("2+3")` successfully
+- **THEN** handler receives on_tool_start(tool_name="calculator", tool_input="2+3") and on_tool_end(output="5") in that order
+
+#### Scenario: Tool fires on_error on execution failure
+- **WHEN** a Tool with callbacks=[handler] calls `run()` and execution raises an exception
+- **THEN** handler receives on_error(error=<the exception>) and on_tool_end is NOT called
 
 ### Requirement: CalculatorTool
 CalculatorTool SHALL evaluate simple arithmetic expressions provided as input string and return the result as a string.

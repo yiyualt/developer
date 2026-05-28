@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: LLMChain composition
-LLMChain SHALL compose a PromptTemplate, an LLM, and an optional OutputParser. The chain SHALL declare `output_keys` — a list of key names that this chain produces. When no OutputParser is set, `output_keys` defaults to `["text"]`. When OutputParser returns a dict, `output_keys` reflects the dict's keys. This enables SequentialChain to know what each step produces. LLMChain SHALL also accept an optional `memory` parameter. When memory is set, `run()` SHALL load conversation history via `memory.load_context()` before formatting the prompt, and save the current interaction via `memory.save_context()` after execution. LLMChain SHALL support arbitrary input variables in its PromptTemplate, including `{context}` for RetrievalChain integration — this is already supported by PromptTemplate's variable system and requires no code change, only documentation clarification.
+LLMChain SHALL compose a PromptTemplate, an LLM, and an optional OutputParser. The chain SHALL declare `output_keys` — a list of key names that this chain produces. When no OutputParser is set, `output_keys` defaults to `["text"]`. When OutputParser returns a dict, `output_keys` reflects the dict's keys. This enables SequentialChain to know what each step produces. LLMChain SHALL also accept an optional `memory` parameter. When memory is set, `run()` SHALL load conversation history via `memory.load_context()` before formatting the prompt, and save the current interaction via `memory.save_context()` after execution. LLMChain SHALL accept an optional `callbacks` parameter (list of CallbackHandler instances). When callbacks are provided, LLMChain SHALL invoke `on_chain_start` before execution with the input kwargs, invoke `on_llm_start` before the LLM call with the formatted prompt, invoke `on_llm_end` after the LLM call with the response, invoke `on_chain_end` after execution with the output, and invoke `on_error` if any step raises an exception. LLMChain SHALL support arbitrary input variables in its PromptTemplate, including `{context}` for RetrievalChain integration — this is already supported by PromptTemplate's variable system and requires no code change, only documentation clarification.
 
 #### Scenario: Chain execution with single variable (no parser)
 - **WHEN** LLMChain is created with a PromptTemplate and an LLM (no output_parser), then `run(name="World")` is called
@@ -18,6 +18,14 @@ LLMChain SHALL compose a PromptTemplate, an LLM, and an optional OutputParser. T
 #### Scenario: Chain execution with context variable
 - **WHEN** LLMChain is created with a PromptTemplate containing `{context}` and `{question}` variables, then `run(context="LangChain is a framework", question="What is LangChain?")` is called
 - **THEN** the prompt is formatted with both context and question, and the LLM response is returned
+
+#### Scenario: LLMChain with callbacks fires lifecycle events
+- **WHEN** LLMChain is created with callbacks=[handler] and `run(question="What is Python?")` is called successfully
+- **THEN** handler receives on_chain_start(serialized_input={"question": "What is Python?"}), on_llm_start(prompt="...formatted prompt..."), on_llm_end(response="Python is..."), on_chain_end(output="Python is...") in that order
+
+#### Scenario: LLMChain fires on_error on LLM failure
+- **WHEN** LLMChain with callbacks=[handler] calls `run()` and the LLM raises an exception
+- **THEN** handler receives on_error(error=<the exception>) and on_chain_end is NOT called
 
 ### Requirement: LLMChain run method
 LLMChain SHALL provide a `run(**kwargs) -> Any` method that accepts input variables as keyword arguments and returns a single response. When no output_parser is set, returns a string. When output_parser is set, returns the parsed result.

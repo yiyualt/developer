@@ -14,6 +14,7 @@ from langchain.agents.output_parser import (
     AgentFinish,
     parse_agent_output,
 )
+from langchain.callbacks.base import CallbackHandler
 from langchain.llms.base import LLM
 from langchain.memory.base import Memory
 from langchain.tools.base import Tool
@@ -60,12 +61,19 @@ class Agent:
         tools: List[Tool],
         max_iterations: int = 5,
         memory: Optional[Memory] = None,
+        callbacks: Optional[List[CallbackHandler]] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
         self.max_iterations = max_iterations
         self.memory = memory
+        self.callbacks = callbacks or []
         self._tool_map = {t.name: t for t in tools}
+
+    def _fire(self, event: str, **kwargs) -> None:
+        """Invoke an event on all registered callback handlers."""
+        for handler in self.callbacks:
+            getattr(handler, event)(**kwargs)
 
     def _build_tool_descriptions(self) -> str:
         lines = [f"- {t.name}: {t.description}" for t in self.tools]
@@ -78,11 +86,37 @@ class Agent:
             scratchpad=scratchpad,
         )
 
+    def _format_log_for_memory(self, question: str, log: list) -> str:
+        """Format the execution log as a string suitable for Memory.
+
+        Includes all Thoughts, Actions, Observations, and the
+        Final Answer — giving future conversations visibility
+        into the Agent's reasoning process.
+        """
+        lines = []
+        for entry in log:
+            if "thought" in entry:
+                lines.append(f"Thought: {entry['thought']}")
+            if "action" in entry:
+                lines.append(f"Action: {entry['action']}")
+            if "observation" in entry:
+                lines.append(f"Observation: {entry['observation']}")
+            if "final_answer" in entry:
+                lines.append(f"Final Answer: {entry['final_answer']}")
+        return "\n".join(lines)
+
     def _execute_tool(self, action: AgentAction) -> str:
         tool = self._tool_map.get(action.tool)
         if tool is None:
             return f"Error: tool '{action.tool}' not found. Available: {list(self._tool_map.keys())}"
-        return tool.run(action.tool_input)
+        self._fire("on_tool_start", tool_name=action.tool, tool_input=action.tool_input)
+        try:
+            result = tool.run(action.tool_input)
+            self._fire("on_tool_end", output=result)
+            return result
+        except Exception as e:
+            self._fire("on_error", error=e)
+            raise
 
     def run(self, question: str) -> str:
         """Execute the ReAct loop and return the Final Answer.
@@ -111,44 +145,52 @@ class Agent:
         return self._run_loop(question)
 
     def _run_loop(self, question: str) -> Dict:
-        scratchpad = ""
-        if self.memory:
-            history = self.memory.load_context()
-            if history:
-                scratchpad = history + "\n"
-        log = []
+        try:
+            scratchpad = ""
+            if self.memory:
+                history = self.memory.load_context()
+                if history:
+                    scratchpad = history + "\n"
+            log = []
 
-        for i in range(self.max_iterations):
-            prompt = self._build_prompt(question, scratchpad)
-            response = self.llm.generate([prompt])[0]
-            parsed = parse_agent_output(response)
+            for i in range(self.max_iterations):
+                prompt = self._build_prompt(question, scratchpad)
+                response = self.llm.generate([prompt])[0]
+                parsed = parse_agent_output(response)
 
-            if isinstance(parsed, AgentFinish):
-                log.append({"thought": parsed.thought, "final_answer": parsed.final_answer})
-                if self.memory:
-                    self.memory.save_context({"question": question}, {"text": parsed.final_answer})
-                return {"answer": parsed.final_answer, "log": log}
+                if isinstance(parsed, AgentFinish):
+                    log.append({"thought": parsed.thought, "final_answer": parsed.final_answer})
+                    self._fire("on_agent_finish", final_answer=parsed.final_answer)
+                    if self.memory:
+                        full_log = self._format_log_for_memory(question, log)
+                        self.memory.save_context({"question": question}, {"text": full_log})
+                    return {"answer": parsed.final_answer, "log": log}
 
-            if isinstance(parsed, AgentAction):
-                observation = self._execute_tool(parsed)
-                entry = {
-                    "thought": parsed.thought,
-                    "action": f"{parsed.tool}[{parsed.tool_input}]",
-                    "observation": observation,
-                }
-                log.append(entry)
-                scratchpad += f"\nThought: {parsed.thought}\nAction: {parsed.tool}[{parsed.tool_input}]\nObservation: {observation}\n"
+                if isinstance(parsed, AgentAction):
+                    self._fire("on_agent_action", action=f"{parsed.tool}[{parsed.tool_input}]")
+                    observation = self._execute_tool(parsed)
+                    entry = {
+                        "thought": parsed.thought,
+                        "action": f"{parsed.tool}[{parsed.tool_input}]",
+                        "observation": observation,
+                    }
+                    log.append(entry)
+                    scratchpad += f"\nThought: {parsed.thought}\nAction: {parsed.tool}[{parsed.tool_input}]\nObservation: {observation}\n"
+                    continue
+
+                # AgentFallback — treat as thought, continue without tool
+                log.append({"thought": parsed.thought})
+                scratchpad += f"\nThought: {parsed.thought}\n"
                 continue
 
-            # AgentFallback — treat as thought, continue without tool
-            log.append({"thought": parsed.thought})
-            scratchpad += f"\nThought: {parsed.thought}\n"
-            continue
+            # Max iterations reached — return last thought as answer
+            last_thought = log[-1]["thought"] if log else question
 
-        # Max iterations reached — return last thought as answer
-        last_thought = log[-1]["thought"] if log else question
+            if self.memory:
+                full_log = self._format_log_for_memory(question, log)
+                self.memory.save_context({"question": question}, {"text": full_log})
 
-        if self.memory:
-            self.memory.save_context({"question": question}, {"text": last_thought})
-
-        return {"answer": last_thought, "log": log}
+            return {"answer": last_thought, "log": log}
+        except Exception as e:
+            self._fire("on_error", error=e)
+            raise

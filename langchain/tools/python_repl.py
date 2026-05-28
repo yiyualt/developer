@@ -16,7 +16,7 @@ class PythonREPLTool(Tool):
     name = "python_repl"
     description = "A Python shell. Use this to execute Python code. Input should be valid Python code."
 
-    def run(self, input: str) -> str:
+    def _run(self, input: str) -> str:
         old_stdout = sys.stdout
         sys.stdout = StringIO()
         try:

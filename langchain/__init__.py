@@ -1,6 +1,8 @@
 """LangChain - Building applications with LLMs through composability."""
 
 from langchain.agents.agent import Agent
+from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.stdout import StdOutCallbackHandler
 from langchain.chains.llm_chain import LLMChain
 from langchain.chains.router import ChainDestination, LLMRouterChain, RouterChain
 from langchain.chains.retrieval import RetrievalChain
@@ -15,6 +17,7 @@ from langchain.llms.openai import OpenAI
 from langchain.memory.base import Memory
 from langchain.memory.buffer import ConversationBufferMemory
 from langchain.memory.buffer_window import ConversationBufferWindowMemory
+from langchain.memory.summary import ConversationSummaryMemory
 from langchain.output_parsers.base import OutputParser
 from langchain.output_parsers.json import JsonOutputParser
 from langchain.output_parsers.list import ListOutputParser
@@ -34,7 +37,8 @@ __all__ = [
     "LLM", "OpenAI", "PromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
     "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool",
-    "Memory", "ConversationBufferMemory", "ConversationBufferWindowMemory",
+    "Memory", "ConversationBufferMemory", "ConversationBufferWindowMemory", "ConversationSummaryMemory",
+    "CallbackHandler", "StdOutCallbackHandler",
     "Document", "DocumentLoader", "TextLoader",
     "TextSplitter",
     "Embeddings", "DashScopeEmbeddings", "LocalEmbeddings",

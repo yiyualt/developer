@@ -20,7 +20,7 @@ class SearchTool(Tool):
         "react": "ReAct (Reasoning + Acting) is a paradigm where LLMs interleave thinking and tool use.",
     }
 
-    def run(self, input: str) -> str:
+    def _run(self, input: str) -> str:
         query_lower = input.lower()
         for key, result in self._mock_results.items():
             if key in query_lower:
