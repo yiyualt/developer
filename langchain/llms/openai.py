@@ -5,6 +5,7 @@ OpenAI-compatible endpoint. Configuration via constructor parameters,
 environment variables, or ``.env`` file.
 """
 
+import asyncio
 import os
 from pathlib import Path
 from typing import Generator, List, Optional
@@ -84,6 +85,10 @@ class OpenAI(LLM):
             api_key=self.openai_api_key,
             base_url=self.base_url,
         )
+        self._async_client = openai.AsyncOpenAI(
+            api_key=self.openai_api_key,
+            base_url=self.base_url,
+        )
 
     def _generate(self, prompts: List[str]) -> List[str]:
         """Generate responses by calling Chat Completions API.
@@ -133,3 +138,26 @@ class OpenAI(LLM):
             delta = chunk.choices[0].delta
             if delta.content is not None:
                 yield delta.content
+
+    async def _agenerate(self, prompts: List[str]) -> List[str]:
+        """Concurrently generate responses via AsyncOpenAI client.
+
+        Uses ``asyncio.gather`` to call all prompts concurrently via
+        the AsyncOpenAI client. Results are returned in input order.
+
+        Args:
+            prompts: A list of prompt strings.
+
+        Returns:
+            A list of response strings, in the same order as input.
+        """
+        async def _call_one(prompt: str) -> str:
+            completion = await self._async_client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+            return completion.choices[0].message.content
+
+        return await asyncio.gather(*[_call_one(p) for p in prompts])

@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: LLMChain composition
 LLMChain SHALL compose a PromptTemplate, an LLM, and an optional OutputParser. The chain SHALL declare `output_keys` — a list of key names that this chain produces. When no OutputParser is set, `output_keys` defaults to `["text"]`. When OutputParser returns a dict, `output_keys` reflects the dict's keys. This enables SequentialChain to know what each step produces. LLMChain SHALL also accept an optional `memory` parameter. When memory is set, `run()` SHALL load conversation history via `memory.load_context()` before formatting the prompt, and save the current interaction via `memory.save_context()` after execution. LLMChain SHALL accept an optional `callbacks` parameter (list of CallbackHandler instances). When callbacks are provided, LLMChain SHALL invoke `on_chain_start` before execution with the input kwargs, invoke `on_llm_start` before the LLM call with the formatted prompt, invoke `on_llm_end` after the LLM call with the response, invoke `on_chain_end` after execution with the output, and invoke `on_error` if any step raises an exception. LLMChain SHALL support arbitrary input variables in its PromptTemplate, including `{context}` for RetrievalChain integration — this is already supported by PromptTemplate's variable system and requires no code change, only documentation clarification.
@@ -37,21 +37,3 @@ LLMChain SHALL provide an `apply_async(input_list: list[dict]) -> list[Any]` asy
 #### Scenario: Async apply with output parser
 - **WHEN** `apply_async([{"topic": "Python"}])` is called on an LLMChain with JsonOutputParser
 - **THEN** the LLM response is parsed through JsonOutputParser.parse() concurrently and a list of parsed dicts is returned
-
-### Requirement: LLMChain run method
-LLMChain SHALL provide a `run(**kwargs) -> Any` method that accepts input variables as keyword arguments and returns a single response. When no output_parser is set, returns a string. When output_parser is set, returns the parsed result.
-
-#### Scenario: Run returns string (no parser)
-- **WHEN** `run(question="What is AI?")` is called on a LLMChain without output_parser
-- **THEN** a single string (the LLM's response) is returned
-
-#### Scenario: Run returns parsed result (with parser)
-- **WHEN** `run(question="What is AI?")` is called on a LLMChain with JsonOutputParser
-- **THEN** a parsed dict (the parser's output) is returned
-
-### Requirement: LLMChain apply method
-LLMChain SHALL provide an `apply(input_list: list[dict]) -> list[Any]` method that accepts a list of input dictionaries and returns a list of results, processing each input through the chain. When no output_parser is set, returns list[str]. When output_parser is set, returns list of parsed results.
-
-#### Scenario: Apply with multiple inputs (no parser)
-- **WHEN** `apply([{"name": "Alice"}, {"name": "Bob"}])` is called on a LLMChain without output_parser
-- **THEN** two response strings are returned

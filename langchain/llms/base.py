@@ -87,3 +87,34 @@ class LLM(ABC):
             Token strings one at a time.
         """
         return self._stream(prompt)
+
+    async def _agenerate(self, prompts: List[str]) -> List[str]:
+        """Async concurrent generation for a list of prompts.
+
+        Subclasses MAY implement this for concurrent LLM calls.
+        If not implemented, ``agenerate()`` falls back to calling
+        ``generate()`` synchronously.
+
+        Args:
+            prompts: A list of prompt strings to send to the model.
+
+        Returns:
+            A list of response strings, one for each input prompt.
+        """
+        return self._generate(prompts)
+
+    async def agenerate(self, prompts: List[str]) -> List[str]:
+        """Async concurrent generation for a list of prompts.
+
+        This is the public entry point for async LLM calls. If the
+        subclass implements ``_agenerate``, prompts are processed
+        concurrently. Otherwise, falls back to synchronous ``generate``.
+
+        Args:
+            prompts: A list of prompt strings to send to the model.
+
+        Returns:
+            A list of response strings, one for each input prompt,
+            in the same order as the input prompts.
+        """
+        return await self._agenerate(prompts)

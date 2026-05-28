@@ -35,9 +35,10 @@ PyTorch 风格文档体系：
 9. **ConversationSummaryMemory** — LLM 增量摘要压缩, Agent 保存完整推理过程
 10. **Callback / Tracing** — CallbackHandler ABC, StdOutCallbackHandler, LLMChain/Agent/Tool 回调集成
 11. **Streaming** — LLM stream() token 级流式输出, LLMChain/Agent stream() 方法, on_llm_new_token 钩子
+12. **Async / 并发** — LLM agenerate() + AsyncOpenAI, LLMChain apply_async(), asyncio.gather 并发
 
 下一步（按 LangChain 历史演进顺序）：
-12. **Async / 并发** — LLM agenerate() + AsyncOpenAI, LLMChain apply_async(), asyncio.gather 并发
+13. **Composition / Multi-Agent** — 组合性维度：Agent 间的协作与编排
 
 ## OpenSpec 工作流
 

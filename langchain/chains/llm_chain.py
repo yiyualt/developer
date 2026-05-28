@@ -6,6 +6,7 @@ sends the resulting prompt to an LLM, optionally parses the output,
 and returns the result.
 """
 
+import asyncio
 from typing import Any, Dict, Generator, List, Optional
 
 from langchain.callbacks.base import CallbackHandler
@@ -208,6 +209,25 @@ class LLMChain:
         """
         prompts = [self.prompt.format(**inputs) for inputs in input_list]
         responses = self.llm.generate(prompts)
+        if self.output_parser:
+            return [self.output_parser.parse(r) for r in responses]
+        return responses
+
+    async def apply_async(self, input_list: List[Dict[str, str]]) -> List[Any]:
+        """Execute the chain with multiple inputs concurrently.
+
+        Like ``apply()`` but uses ``agenerate()`` for concurrent LLM
+        calls. Results are returned in the same order as input_list.
+
+        Args:
+            input_list: A list of dictionaries, each containing values
+                for the PromptTemplate's ``input_variables``.
+
+        Returns:
+            A list of parsed results or raw response strings.
+        """
+        prompts = [self.prompt.format(**inputs) for inputs in input_list]
+        responses = await self.llm.agenerate(prompts)
         if self.output_parser:
             return [self.output_parser.parse(r) for r in responses]
         return responses

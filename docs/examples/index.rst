@@ -18,6 +18,7 @@ own use case.
    retrieval-example
    callback-example
    streaming-example
+   async-example
    router-example
 
    

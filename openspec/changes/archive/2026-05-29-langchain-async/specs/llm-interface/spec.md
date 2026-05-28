@@ -45,18 +45,3 @@ The LLM base class SHALL provide a `generate(prompts: list[str]) -> list[str]` p
 #### Scenario: Async generate multiple prompts concurrently
 - **WHEN** `agenerate(["prompt1", "prompt2", "prompt3"])` is called on a valid LLM subclass instance that implements `_agenerate`
 - **THEN** prompts are processed concurrently and responses are returned in the same order as input
-
-### Requirement: FakeLLM implementation
-FakeLLM SHALL be a concrete LLM subclass that returns predictable responses for testing. It SHALL accept an optional `responses` dict mapping prompt strings to response strings, and return a default response for prompts not in the dict.
-
-#### Scenario: FakeLLM with mapped response
-- **WHEN** FakeLLM is created with `responses={"What is Python?": "Python is a programming language"}` and `generate(["What is Python?"])` is called
-- **THEN** the result is `["Python is a programming language"]`
-
-#### Scenario: FakeLLM with unmapped prompt
-- **WHEN** FakeLLM is created with default response `"Fake response"` and `generate(["Random question"])` is called
-- **THEN** the result is `["Fake response"]`
-
-#### Scenario: FakeLLM default response
-- **WHEN** FakeLLM is created without any responses argument and `generate(["Any prompt"])` is called
-- **THEN** the result is `["Fake LLM response"]`

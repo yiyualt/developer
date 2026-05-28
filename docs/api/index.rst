@@ -18,6 +18,7 @@ in LangChain, generated automatically from Python docstrings.
    memory
    callbacks
    streaming
+   async
    document-loaders
    text-splitters
    embeddings
