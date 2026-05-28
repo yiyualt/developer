@@ -57,6 +57,10 @@ class StdOutCallbackHandler(CallbackHandler):
         final_answer = kwargs.get("final_answer", "")
         print(f"[Agent] Finish: {final_answer}")
 
+    def on_llm_new_token(self, **kwargs) -> None:
+        token = kwargs.get("token", "")
+        print(token, end="", flush=True)
+
     def on_error(self, **kwargs) -> None:
         error = kwargs.get("error", "")
         print(f"[Error] {error}")

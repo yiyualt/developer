@@ -6,7 +6,7 @@ The public ``generate`` method handles the contract between caller and model.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Generator, List
 
 
 class LLM(ABC):
@@ -54,3 +54,36 @@ class LLM(ABC):
             A list of response strings, one for each input prompt.
         """
         return self._generate(prompts)
+
+    def _stream(self, prompt: str) -> Generator[str, None, None]:
+        """Stream tokens for a single prompt.
+
+        Subclasses MAY implement this for token-by-token generation.
+        If not implemented, calling ``stream()`` raises NotImplementedError.
+
+        Args:
+            prompt: A single prompt string.
+
+        Yields:
+            Token strings one at a time.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support streaming. "
+            "Implement _stream() to enable token-by-token generation."
+        )
+
+    def stream(self, prompt: str) -> Generator[str, None, None]:
+        """Stream tokens for a single prompt.
+
+        This is the public entry point for streaming LLM calls.
+        It delegates to the subclass's ``_stream`` implementation.
+        Each yielded token is a string; concatenating all tokens
+        equals the full response.
+
+        Args:
+            prompt: A single prompt string.
+
+        Yields:
+            Token strings one at a time.
+        """
+        return self._stream(prompt)

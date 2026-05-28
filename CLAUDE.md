@@ -34,9 +34,10 @@ PyTorch 风格文档体系：
 8. **Router Chain** — RouterChain ABC, LLMRouterChain, ChainDestination, Dynamic Option Injection 模式
 9. **ConversationSummaryMemory** — LLM 增量摘要压缩, Agent 保存完整推理过程
 10. **Callback / Tracing** — CallbackHandler ABC, StdOutCallbackHandler, LLMChain/Agent/Tool 回调集成
+11. **Streaming** — LLM stream() token 级流式输出, LLMChain/Agent stream() 方法, on_llm_new_token 钩子
 
 下一步（按 LangChain 历史演进顺序）：
-11. **Streaming / Async** — LLM 流式输出，Agent 实时推理流
+12. **Async / 并发** — LLM agenerate() + AsyncOpenAI, LLMChain apply_async(), asyncio.gather 并发
 
 ## OpenSpec 工作流
 

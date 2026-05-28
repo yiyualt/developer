@@ -93,6 +93,14 @@ class CallbackHandler(ABC):
             final_answer (str): The agent's final answer.
         """
 
+    def on_llm_new_token(self, **kwargs) -> None:
+        """Called for each token during streaming LLM generation.
+
+        kwargs typically include:
+            token (str): The token text yielded by the LLM.
+            run_id (str): An identifier for the current LLM call.
+        """
+
     def on_error(self, **kwargs) -> None:
         """Called when any execution step raises an exception.
 

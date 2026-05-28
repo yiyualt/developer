@@ -8,7 +8,7 @@ large language models. This documentation follows the project's growth
 from its earliest design to a mature framework.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents
 
    tutorials/index

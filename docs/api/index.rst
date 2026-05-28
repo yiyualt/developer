@@ -17,6 +17,7 @@ in LangChain, generated automatically from Python docstrings.
    agents
    memory
    callbacks
+   streaming
    document-loaders
    text-splitters
    embeddings

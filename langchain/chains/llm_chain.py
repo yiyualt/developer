@@ -6,7 +6,7 @@ sends the resulting prompt to an LLM, optionally parses the output,
 and returns the result.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from langchain.callbacks.base import CallbackHandler
 from langchain.llms.base import LLM
@@ -124,6 +124,46 @@ class LLMChain:
         except Exception as e:
             self._fire("on_error", error=e)
             raise
+
+    def stream(self, **kwargs: str) -> Generator[str, None, None]:
+        """Execute the chain in streaming mode, yielding tokens.
+
+        Behaves like ``run()`` for prompt construction and memory
+        loading, but uses the LLM's ``stream()`` method instead of
+        ``generate()``. Each token from the LLM is yielded and
+        ``on_llm_new_token`` is fired on callbacks.
+
+        Memory is saved after streaming completes — the full
+        concatenated response is stored, not individual tokens.
+
+        Args:
+            **kwargs: Input variables matching the PromptTemplate's
+                ``input_variables``.
+
+        Yields:
+            Token strings one at a time from the LLM.
+        """
+        self._fire("on_chain_start", inputs=kwargs)
+        history = self.memory.load_context() if self.memory else ""
+        if history:
+            formatted = history + "\n" + self.prompt.format(**kwargs)
+        else:
+            formatted = self.prompt.format(**kwargs)
+        self._fire("on_llm_start", prompt=formatted)
+
+        tokens = []
+        for token in self.llm.stream(formatted):
+            self._fire("on_llm_new_token", token=token)
+            tokens.append(token)
+            yield token
+
+        full_response = "".join(tokens)
+        self._fire("on_llm_end", response=full_response)
+
+        if self.memory:
+            self.memory.save_context(kwargs, {"text": full_response})
+
+        self._fire("on_chain_end", output=full_response)
 
     def _call_internal(self, **kwargs: str) -> Dict[str, Any]:
         """Execute the chain and return output as a dict.

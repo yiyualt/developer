@@ -6,7 +6,7 @@ Final Answer. Each Action invokes a Tool, and the Observation
 is appended to the prompt for the next iteration.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from langchain.agents.output_parser import (
     AgentAction,
@@ -143,6 +143,79 @@ class Agent:
             final_answer from each iteration.
         """
         return self._run_loop(question)
+
+    def stream(self, question: str) -> Generator[Dict, None, None]:
+        """Execute the ReAct loop in streaming mode, yielding step events.
+
+        Each yielded dict has ``type`` and ``content`` fields:
+        - ``thought``: Agent's reasoning
+        - ``action``: Tool action selected (e.g. "calculator[2+3]")
+        - ``observation``: Tool execution result
+        - ``final_answer``: The final answer to the question
+
+        Callbacks are fired at each step just like ``run()``.
+        Memory is saved after streaming completes.
+
+        Args:
+            question: The question to answer.
+
+        Yields:
+            Step event dicts with ``type`` and ``content`` keys.
+        """
+        scratchpad = ""
+        if self.memory:
+            history = self.memory.load_context()
+            if history:
+                scratchpad = history + "\n"
+        log = []
+
+        try:
+            for i in range(self.max_iterations):
+                prompt = self._build_prompt(question, scratchpad)
+                response = self.llm.generate([prompt])[0]
+                parsed = parse_agent_output(response)
+
+                if isinstance(parsed, AgentFinish):
+                    log.append({"thought": parsed.thought, "final_answer": parsed.final_answer})
+                    self._fire("on_agent_finish", final_answer=parsed.final_answer)
+                    yield {"type": "thought", "content": parsed.thought}
+                    yield {"type": "final_answer", "content": parsed.final_answer}
+                    if self.memory:
+                        full_log = self._format_log_for_memory(question, log)
+                        self.memory.save_context({"question": question}, {"text": full_log})
+                    return
+
+                if isinstance(parsed, AgentAction):
+                    self._fire("on_agent_action", action=f"{parsed.tool}[{parsed.tool_input}]")
+                    yield {"type": "thought", "content": parsed.thought}
+                    yield {"type": "action", "content": f"{parsed.tool}[{parsed.tool_input}]"}
+                    observation = self._execute_tool(parsed)
+                    entry = {
+                        "thought": parsed.thought,
+                        "action": f"{parsed.tool}[{parsed.tool_input}]",
+                        "observation": observation,
+                    }
+                    log.append(entry)
+                    yield {"type": "observation", "content": observation}
+                    scratchpad += f"\nThought: {parsed.thought}\nAction: {parsed.tool}[{parsed.tool_input}]\nObservation: {observation}\n"
+                    continue
+
+                # AgentFallback — treat as thought
+                log.append({"thought": parsed.thought})
+                yield {"type": "thought", "content": parsed.thought}
+                scratchpad += f"\nThought: {parsed.thought}\n"
+                continue
+
+            # Max iterations reached
+            last_thought = log[-1]["thought"] if log else question
+            yield {"type": "final_answer", "content": last_thought}
+            if self.memory:
+                full_log = self._format_log_for_memory(question, log)
+                self.memory.save_context({"question": question}, {"text": full_log})
+
+        except Exception as e:
+            self._fire("on_error", error=e)
+            raise
 
     def _run_loop(self, question: str) -> Dict:
         try:

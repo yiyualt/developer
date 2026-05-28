@@ -17,6 +17,7 @@ own use case.
    memory-example
    retrieval-example
    callback-example
+   streaming-example
    router-example
 
    

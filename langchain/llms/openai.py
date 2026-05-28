@@ -7,7 +7,7 @@ environment variables, or ``.env`` file.
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Generator, List, Optional
 
 import openai
 from dotenv import load_dotenv
@@ -107,3 +107,29 @@ class OpenAI(LLM):
             )
             responses.append(completion.choices[0].message.content)
         return responses
+
+    def _stream(self, prompt: str) -> Generator[str, None, None]:
+        """Stream tokens for a single prompt via Chat Completions API.
+
+        Uses ``stream=True`` to get token-by-token responses from the
+        API. Each chunk's ``content`` delta is yielded as a token.
+
+        Args:
+            prompt: A single prompt string.
+
+        Yields:
+            Token strings one at a time.
+        """
+        stream = self._client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            stream=True,
+        )
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta.content is not None:
+                yield delta.content

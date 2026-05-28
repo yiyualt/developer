@@ -18,6 +18,7 @@ the way they do, similar to PyTorch's "Notes" tradition.
    memory-design
    retrieval-philosophy
    callback-philosophy
+   streaming-philosophy
    router-philosophy
 
    
