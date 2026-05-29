@@ -28,6 +28,7 @@ from langchain.schema import Document
 from langchain.text_splitters.base import TextSplitter
 from langchain.tools.base import Tool
 from langchain.tools.calculator import CalculatorTool
+from langchain.tools.decorator import tool
 from langchain.tools.search import SearchTool
 from langchain.tools.python_repl import PythonREPLTool
 from langchain.vectorstores.base import VectorStore
@@ -38,7 +39,7 @@ __all__ = [
     "RouterChain", "LLMRouterChain", "ChainDestination",
     "LLM", "OpenAI", "PromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
-    "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool",
+    "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool", "tool",
     "Memory", "ConversationBufferMemory", "ConversationBufferWindowMemory", "ConversationSummaryMemory",
     "CallbackHandler", "StdOutCallbackHandler",
     "Document", "DocumentLoader", "TextLoader",
