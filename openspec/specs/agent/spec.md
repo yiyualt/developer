@@ -44,3 +44,14 @@ Agent SHALL provide a `run_with_log()` method that returns a dict containing the
 #### Scenario: Retrieve execution log
 - **WHEN** `run_with_log(question="What is 2+3?")` is called and the Agent completes 2 iterations
 - **THEN** the returned dict contains {"answer": "5", "log": [{"thought": "...", "action": "calculator[2+3]", "observation": "5"}, {"thought": "...", "final_answer": "5"}]}
+
+### Requirement: Agent description attribute
+Agent SHALL accept an optional `description` parameter in its constructor, defaulting to an empty string. The `description` attribute SHALL be a human-readable description of the Agent's capabilities, used when the Agent is wrapped in an AgentTool to inform the orchestrator Agent about this specialist's expertise.
+
+#### Scenario: Agent created with description
+- **WHEN** Agent is created with `description="Solves complex math problems step by step"`
+- **THEN** `agent.description` SHALL return "Solves complex math problems step by step"
+
+#### Scenario: Agent created without description
+- **WHEN** Agent is created without a `description` parameter
+- **THEN** `agent.description` SHALL be an empty string

@@ -14,6 +14,7 @@ own use case.
    json-output
    multi-step
    agent-example
+   multi-agent-example
    memory-example
    retrieval-example
    callback-example

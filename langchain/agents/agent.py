@@ -45,6 +45,11 @@ class Agent:
         tools: A list of Tool instances available to the agent.
         max_iterations: Maximum number of ReAct loop iterations
             before terminating. Default is 5.
+        memory: Optional Memory instance for conversation history.
+        callbacks: Optional list of CallbackHandler instances.
+        description: Optional description of this Agent's capabilities,
+            used when the Agent is wrapped in an AgentTool to help
+            orchestrator Agents decide when to delegate. Default is "".
 
     Examples:
         Simple agent with calculator::
@@ -53,6 +58,16 @@ class Agent:
             >>> agent = Agent(llm=OpenAI(), tools=[CalculatorTool()])
             >>> agent.run(question="What is 2 + 3?")
             '5'
+
+        Specialist agent with description for multi-agent composition::
+
+            >>> math_agent = Agent(
+            ...     llm=OpenAI(),
+            ...     tools=[CalculatorTool()],
+            ...     description="Solves math problems using a calculator"
+            ... )
+            >>> from langchain.agents.tool import AgentTool
+            >>> tool = AgentTool(name="math_expert", agent=math_agent)
     """
 
     def __init__(
@@ -62,12 +77,14 @@ class Agent:
         max_iterations: int = 5,
         memory: Optional[Memory] = None,
         callbacks: Optional[List[CallbackHandler]] = None,
+        description: str = "",
     ) -> None:
         self.llm = llm
         self.tools = tools
         self.max_iterations = max_iterations
         self.memory = memory
         self.callbacks = callbacks or []
+        self.description = description
         self._tool_map = {t.name: t for t in tools}
 
     def _fire(self, event: str, **kwargs) -> None:

@@ -15,6 +15,7 @@ the way they do, similar to PyTorch's "Notes" tradition.
    output-parsing-philosophy
    sequential-chain-design
    agent-design
+   agent-composition-philosophy
    memory-design
    retrieval-philosophy
    callback-philosophy
