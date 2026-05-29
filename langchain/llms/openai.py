@@ -113,6 +113,47 @@ class OpenAI(LLM):
             responses.append(completion.choices[0].message.content)
         return responses
 
+    def generate_messages(
+        self, messages_list: List[List]  # List[List[BaseMessage]]
+    ) -> List[str]:
+        """Generate responses from structured chat messages.
+
+        Unlike ``generate()`` which receives plain strings and
+        wraps them as ``user`` messages, ``generate_messages()``
+        receives typed messages (SystemMessage, HumanMessage,
+        AIMessage) and passes their roles correctly to the API.
+
+        Args:
+            messages_list: A list of conversation turns, where each
+                turn is a list of message instances with ``role``
+                and ``content`` attributes.
+
+        Returns:
+            A list of response strings, one for each conversation.
+
+        Examples:
+            >>> from langchain.schema import SystemMessage, HumanMessage
+            >>> openai.generate_messages([[
+            ...     SystemMessage("You are helpful."),
+            ...     HumanMessage("Say hi"),
+            ... ]])
+            ['Hello! How can I help you today?']
+        """
+        responses = []
+        for messages in messages_list:
+            api_messages = [
+                {"role": msg.role, "content": msg.content}
+                for msg in messages
+            ]
+            completion = self._client.chat.completions.create(
+                model=self.model_name,
+                messages=api_messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+            responses.append(completion.choices[0].message.content)
+        return responses
+
     def _stream(self, prompt: str) -> Generator[str, None, None]:
         """Stream tokens for a single prompt via Chat Completions API.
 

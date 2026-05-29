@@ -16,6 +16,7 @@ own use case.
    agent-example
    multi-agent-example
    plan-execute-example
+   chat-model-example
    memory-example
    retrieval-example
    callback-example

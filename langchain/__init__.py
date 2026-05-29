@@ -25,7 +25,8 @@ from langchain.output_parsers.base import OutputParser
 from langchain.output_parsers.json import JsonOutputParser
 from langchain.output_parsers.list import ListOutputParser
 from langchain.prompts.prompt import PromptTemplate
-from langchain.schema import Document
+from langchain.prompts.chat import ChatPromptTemplate
+from langchain.schema import AIMessage, BaseMessage, Document, HumanMessage, SystemMessage
 from langchain.text_splitters.base import TextSplitter
 from langchain.tools.base import Tool
 from langchain.tools.calculator import CalculatorTool
@@ -38,12 +39,12 @@ from langchain.vectorstores.simple import SimpleVectorStore
 __all__ = [
     "Agent", "AgentTool", "MultiAgentOrchestrator", "PlanAndExecuteAgent", "SequentialAgentChain", "LLMChain", "RetrievalChain", "SequentialChain",
     "RouterChain", "LLMRouterChain", "ChainDestination",
-    "LLM", "OpenAI", "PromptTemplate",
+    "LLM", "OpenAI", "PromptTemplate", "ChatPromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
     "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool", "tool",
     "Memory", "ConversationBufferMemory", "ConversationBufferWindowMemory", "ConversationSummaryMemory",
     "CallbackHandler", "StdOutCallbackHandler",
-    "Document", "DocumentLoader", "TextLoader",
+    "Document", "BaseMessage", "SystemMessage", "HumanMessage", "AIMessage", "DocumentLoader", "TextLoader",
     "TextSplitter",
     "Embeddings", "DashScopeEmbeddings", "LocalEmbeddings",
     "VectorStore", "SimpleVectorStore",
