@@ -82,6 +82,59 @@ Agent needs different descriptions in different contexts:
    print(tool.description)
    # "Handles arithmetic and numeric calculations only"
 
+Using MultiAgentOrchestrator (simpler)
+---------------------------------------
+
+Instead of manually wrapping agents and configuring the orchestrator,
+use ``MultiAgentOrchestrator`` — it does all the boilerplate for you:
+
+.. code-block:: python
+
+   from langchain import MultiAgentOrchestrator, Agent, OpenAI, CalculatorTool, SearchTool
+
+   llm = OpenAI()
+
+   math_agent = Agent(
+       llm=llm, tools=[CalculatorTool()],
+       description="Solves math problems using a calculator",
+   )
+   research_agent = Agent(
+       llm=llm, tools=[SearchTool()],
+       description="Searches the web for factual information",
+   )
+
+   # One line to set up the orchestrator
+   orchestrator = MultiAgentOrchestrator(
+       llm=llm,
+       specialists=[math_agent, research_agent],
+   )
+
+   answer = orchestrator.run(
+       "What is the population of Tokyo? Then calculate 10% of it."
+   )
+   print(answer)
+
+Using SequentialAgentChain
+---------------------------
+
+``SequentialAgentChain`` pipes one agent's output as the next agent's input:
+
+.. code-block:: python
+
+   from langchain import SequentialAgentChain, Agent, OpenAI
+
+   llm = OpenAI()
+
+   planner = Agent(llm=llm, tools=[], description="Plans the task")
+   executor = Agent(llm=llm, tools=[], description="Executes the plan")
+   reviewer = Agent(llm=llm, tools=[], description="Reviews the result")
+
+   pipeline = SequentialAgentChain([planner, executor, reviewer])
+
+   # planner processes → executor receives planner's output → reviewer finishes
+   result = pipeline.run("Build a personal blog website")
+   print(result)
+
 Mixing AgentTools with regular Tools
 --------------------------------------
 
