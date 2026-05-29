@@ -15,6 +15,7 @@ own use case.
    multi-step
    agent-example
    multi-agent-example
+   plan-execute-example
    memory-example
    retrieval-example
    callback-example

@@ -1,6 +1,7 @@
 """LangChain - Building applications with LLMs through composability."""
 
 from langchain.agents.agent import Agent
+from langchain.agents.plan_execute import PlanAndExecuteAgent
 from langchain.agents.tool import AgentTool
 from langchain.callbacks.base import CallbackHandler
 from langchain.callbacks.stdout import StdOutCallbackHandler
@@ -33,7 +34,7 @@ from langchain.vectorstores.base import VectorStore
 from langchain.vectorstores.simple import SimpleVectorStore
 
 __all__ = [
-    "Agent", "AgentTool", "LLMChain", "RetrievalChain", "SequentialChain",
+    "Agent", "AgentTool", "PlanAndExecuteAgent", "LLMChain", "RetrievalChain", "SequentialChain",
     "RouterChain", "LLMRouterChain", "ChainDestination",
     "LLM", "OpenAI", "PromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",

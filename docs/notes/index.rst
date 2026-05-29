@@ -16,6 +16,7 @@ the way they do, similar to PyTorch's "Notes" tradition.
    sequential-chain-design
    agent-design
    agent-composition-philosophy
+   plan-execute-philosophy
    memory-design
    retrieval-philosophy
    callback-philosophy
