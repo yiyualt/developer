@@ -7,7 +7,10 @@ used. The orchestrator Agent sees specialist Agents as just more tools
 in its tool belt.
 """
 
+from typing import List, Optional
+
 from langchain.agents.agent import Agent
+from langchain.callbacks.base import CallbackHandler
 from langchain.tools.base import Tool
 
 
@@ -55,8 +58,9 @@ class AgentTool(Tool):
         name: str,
         agent: Agent,
         description: str = "",
+        callbacks: Optional[List[CallbackHandler]] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(callbacks=callbacks)
         self.name = name
         self.agent = agent
         self.description = (
@@ -64,6 +68,11 @@ class AgentTool(Tool):
             or agent.description
             or f"Delegates to {name} specialist agent"
         )
+        # Merge AgentTool callbacks into wrapped Agent's callbacks
+        if callbacks:
+            self.agent.callbacks = list(
+                {id(h): h for h in self.agent.callbacks + list(callbacks)}.values()
+            )
 
     def _run(self, input: str) -> str:
         """Delegate the question to the wrapped Agent.

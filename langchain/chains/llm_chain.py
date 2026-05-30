@@ -10,13 +10,14 @@ import asyncio
 from typing import Any, Dict, Generator, List, Optional
 
 from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
 from langchain.memory.base import Memory
 from langchain.output_parsers.base import OutputParser
 from langchain.prompts.prompt import PromptTemplate
 
 
-class LLMChain:
+class LLMChain(CallbackMixin):
     """Chain that composes a PromptTemplate with an LLM and optional OutputParser.
 
     LLMChain takes a PromptTemplate and an LLM, and optionally an
@@ -74,11 +75,6 @@ class LLMChain:
         self.output_parser = output_parser
         self.memory = memory
         self.callbacks = callbacks or []
-
-    def _fire(self, event: str, **kwargs) -> None:
-        """Invoke an event on all registered callback handlers."""
-        for handler in self.callbacks:
-            getattr(handler, event)(**kwargs)
 
     def run(self, **kwargs: str) -> Any:
         """Execute the chain with a single input and return one result.

@@ -12,6 +12,8 @@ import re
 from typing import Dict, List, Optional
 
 from langchain.agents.agent import Agent
+from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
 from langchain.tools.base import Tool
 
@@ -31,7 +33,7 @@ EXECUTE_PROMPT_TEMPLATE = """You are an execution agent. Your task is to execute
 Execute the current step and return ONLY the result of your execution. Do not continue to other steps."""
 
 
-class PlanAndExecuteAgent:
+class PlanAndExecuteAgent(CallbackMixin):
     """Agent that decomposes a goal into a plan and executes each step.
 
     PlanAndExecuteAgent uses a two-phase approach:
@@ -69,10 +71,12 @@ class PlanAndExecuteAgent:
         llm: LLM,
         tools: Optional[List[Tool]] = None,
         max_steps: int = 10,
+        callbacks: Optional[List[CallbackHandler]] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools or []
         self.max_steps = max_steps
+        self.callbacks = callbacks or []
 
     def _parse_plan(self, response: str) -> List[str]:
         """Parse a numbered list of steps from LLM response.

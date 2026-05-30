@@ -9,9 +9,10 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.mixin import CallbackMixin
 
 
-class Tool(ABC):
+class Tool(ABC, CallbackMixin):
     """Abstract base class for Agent tools.
 
     Every Tool exposes three attributes: name (unique identifier),
@@ -27,11 +28,6 @@ class Tool(ABC):
 
     def __init__(self, callbacks: Optional[List[CallbackHandler]] = None) -> None:
         self.callbacks = callbacks or []
-
-    def _fire(self, event: str, **kwargs) -> None:
-        """Invoke an event on all registered callback handlers."""
-        for handler in self.callbacks:
-            getattr(handler, event)(**kwargs)
 
     @abstractmethod
     def _run(self, input: str) -> str:

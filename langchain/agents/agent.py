@@ -15,6 +15,7 @@ from langchain.agents.output_parser import (
     parse_agent_output,
 )
 from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
 from langchain.memory.base import Memory
 from langchain.tools.base import Tool
@@ -37,7 +38,7 @@ Question: {question}
 {scratchpad}"""
 
 
-class Agent:
+class Agent(CallbackMixin):
     """ReAct Agent that autonomously selects and executes tools.
 
     Args:
@@ -87,11 +88,6 @@ class Agent:
         self.description = description
         self._tool_map = {t.name: t for t in tools}
 
-    def _fire(self, event: str, **kwargs) -> None:
-        """Invoke an event on all registered callback handlers."""
-        for handler in self.callbacks:
-            getattr(handler, event)(**kwargs)
-
     def _build_tool_descriptions(self) -> str:
         lines = [f"- {t.name}: {t.description}" for t in self.tools]
         return "\n".join(lines)
@@ -126,14 +122,7 @@ class Agent:
         tool = self._tool_map.get(action.tool)
         if tool is None:
             return f"Error: tool '{action.tool}' not found. Available: {list(self._tool_map.keys())}"
-        self._fire("on_tool_start", tool_name=action.tool, tool_input=action.tool_input)
-        try:
-            result = tool.run(action.tool_input)
-            self._fire("on_tool_end", output=result)
-            return result
-        except Exception as e:
-            self._fire("on_error", error=e)
-            raise
+        return tool.run(action.tool_input)
 
     def run(self, question: str) -> str:
         """Execute the ReAct loop and return the Final Answer.

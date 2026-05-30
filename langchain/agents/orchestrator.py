@@ -13,10 +13,12 @@ from typing import Dict, List, Optional
 
 from langchain.agents.agent import Agent
 from langchain.agents.tool import AgentTool
+from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
 
 
-class MultiAgentOrchestrator:
+class MultiAgentOrchestrator(CallbackMixin):
     """Route a question to the most appropriate specialist agent.
 
     MultiAgentOrchestrator wraps each specialist in an AgentTool,
@@ -34,6 +36,7 @@ class MultiAgentOrchestrator:
             used to inform the orchestrator about expertise.
         max_iterations: Max ReAct iterations for the orchestrator.
             Default is 5.
+        callbacks: Optional list of CallbackHandler instances.
 
     Examples:
         Math + creative orchestration::
@@ -51,7 +54,9 @@ class MultiAgentOrchestrator:
         llm: LLM,
         specialists: List[Agent],
         max_iterations: int = 5,
+        callbacks: Optional[List[CallbackHandler]] = None,
     ) -> None:
+        self.callbacks = callbacks or []
         self.llm = llm
         self.specialists = specialists
         self.max_iterations = max_iterations
@@ -68,6 +73,7 @@ class MultiAgentOrchestrator:
             llm=llm,
             tools=list(self.tools),
             max_iterations=max_iterations,
+            callbacks=self.callbacks,
             description="Orchestrator agent that delegates questions to specialist agents",
         )
 
@@ -102,7 +108,7 @@ class MultiAgentOrchestrator:
         }
 
 
-class SequentialAgentChain:
+class SequentialAgentChain(CallbackMixin):
     """Execute agents in sequence, piping output as input.
 
     SequentialAgentChain runs agents one after another: Agent₁
@@ -116,6 +122,7 @@ class SequentialAgentChain:
 
     Args:
         agents: List of Agent instances in execution order.
+        callbacks: Optional list of CallbackHandler instances.
 
     Examples:
         Plan → Execute → Review pipeline::
@@ -129,8 +136,19 @@ class SequentialAgentChain:
             'The blog has been built and reviewed. Here is...'
     """
 
-    def __init__(self, agents: List[Agent]) -> None:
+    def __init__(
+        self,
+        agents: List[Agent],
+        callbacks: Optional[List[CallbackHandler]] = None,
+    ) -> None:
         self.agents = agents
+        self.callbacks = callbacks or []
+        # Merge chain callbacks into each agent
+        if callbacks:
+            for agent in self.agents:
+                agent.callbacks = list(
+                    {id(h): h for h in agent.callbacks + list(callbacks)}.values()
+                )
 
     def run(self, question: str) -> str:
         """Execute agents in sequence and return the final output.

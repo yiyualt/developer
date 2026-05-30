@@ -7,9 +7,11 @@ and retries with feedback if validation fails.
 Quality is not a destination — it's a loop.
 """
 
-from typing import Dict
+from typing import Dict, List, Optional
 
 from langchain.agents.agent import Agent
+from langchain.callbacks.base import CallbackHandler
+from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
 
 CORRECTOR_PROMPT = """You are a quality checker. Evaluate whether the following answer correctly and completely addresses the question.
@@ -24,7 +26,7 @@ If the answer has any issues, explain what is wrong and how to fix it.
 Response:"""
 
 
-class LLMCorrector:
+class LLMCorrector(CallbackMixin):
     """Validate answer quality using an LLM evaluator.
 
     LLMCorrector asks an LLM to judge whether an answer is correct
@@ -33,6 +35,7 @@ class LLMCorrector:
 
     Args:
         llm: LLM instance used for evaluation.
+        callbacks: Optional list of CallbackHandler instances.
 
     Examples:
         >>> corrector = LLMCorrector(llm=OpenAI())
@@ -44,8 +47,13 @@ class LLMCorrector:
         True
     """
 
-    def __init__(self, llm: LLM) -> None:
+    def __init__(
+        self,
+        llm: LLM,
+        callbacks: Optional[List[CallbackHandler]] = None,
+    ) -> None:
         self.llm = llm
+        self.callbacks = callbacks or []
 
     def check(self, question: str, answer: str) -> tuple:
         """Evaluate whether the answer is correct.
@@ -65,7 +73,7 @@ class LLMCorrector:
         return (False, response.strip())
 
 
-class SelfCorrectingAgent:
+class SelfCorrectingAgent(CallbackMixin):
     """Wrap an Agent with automatic validation and retry.
 
     SelfCorrectingAgent runs the wrapped Agent, validates the
@@ -78,6 +86,7 @@ class SelfCorrectingAgent:
         corrector: A LLMCorrector for validating answers.
         max_retries: Maximum number of attempts (including the
             first). Default is 3.
+        callbacks: Optional list of CallbackHandler instances.
 
     Examples:
         >>> agent = Agent(llm=llm, tools=[...])
@@ -88,11 +97,21 @@ class SelfCorrectingAgent:
     """
 
     def __init__(
-        self, agent: Agent, corrector: LLMCorrector, max_retries: int = 3
+        self,
+        agent: Agent,
+        corrector: LLMCorrector,
+        max_retries: int = 3,
+        callbacks: Optional[List[CallbackHandler]] = None,
     ) -> None:
         self.agent = agent
         self.corrector = corrector
         self.max_retries = max_retries
+        self.callbacks = callbacks or []
+        # Merge callbacks into wrapped agent
+        if callbacks:
+            self.agent.callbacks = list(
+                {id(h): h for h in self.agent.callbacks + list(callbacks)}.values()
+            )
 
     def run(self, question: str) -> str:
         """Run the agent with self-correction, returning the best answer.
