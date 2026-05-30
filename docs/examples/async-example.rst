@@ -89,3 +89,32 @@ With output parser
 
     for r in results:
         print(r)  # parsed dicts, not strings
+
+Concurrent Agent runs with apply_async
+---------------------------------------
+
+.. code-block:: python
+
+    import asyncio
+
+    from langchain import Agent, OpenAI, CalculatorTool
+
+    agent = Agent(llm=OpenAI(), tools=[CalculatorTool()])
+
+    # Run multiple questions concurrently
+    questions = [
+        "What is 15 * 7?",
+        "What is 99 + 1?",
+        "What is 100 / 4?",
+    ]
+
+    answers = asyncio.run(agent.apply_async(questions))
+
+    for q, a in zip(questions, answers):
+        print(f"Q: {q}")
+        print(f"A: {a}")
+        print()
+
+Each question runs in an independent ReAct loop using ``llm.agenerate()``.
+Results are returned in the same order as the input questions — just like
+``LLMChain.apply_async()``.

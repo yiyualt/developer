@@ -6,6 +6,7 @@ Final Answer. Each Action invokes a Tool, and the Observation
 is appended to the prompt for the next iteration.
 """
 
+import asyncio
 from typing import Dict, Generator, List, Optional
 
 from langchain.agents.output_parser import (
@@ -273,3 +274,79 @@ class Agent(CallbackMixin):
         except Exception as e:
             self._fire("on_error", error=e)
             raise
+
+    async def _arun_loop(self, question: str) -> Dict:
+        """Async ReAct loop — same logic as _run_loop but with agenerate.
+
+        Each LLM call uses ``await self.llm.agenerate()`` for non-blocking
+        I/O. Memory, callbacks, and tool execution remain synchronous —
+        only the LLM call is awaited.
+        """
+        try:
+            scratchpad = ""
+            if self.memory:
+                history = self.memory.load_context()
+                if history:
+                    scratchpad = history + "\n"
+            log = []
+
+            for i in range(self.max_iterations):
+                prompt = self._build_prompt(question, scratchpad)
+                responses = await self.llm.agenerate([prompt])
+                response = responses[0]
+                parsed = parse_agent_output(response)
+
+                if isinstance(parsed, AgentFinish):
+                    log.append({"thought": parsed.thought, "final_answer": parsed.final_answer})
+                    self._fire("on_agent_finish", final_answer=parsed.final_answer)
+                    if self.memory:
+                        full_log = self._format_log_for_memory(question, log)
+                        self.memory.save_context({"question": question}, {"text": full_log})
+                    return {"answer": parsed.final_answer, "log": log}
+
+                if isinstance(parsed, AgentAction):
+                    self._fire("on_agent_action", action=f"{parsed.tool}[{parsed.tool_input}]")
+                    observation = self._execute_tool(parsed)
+                    entry = {
+                        "thought": parsed.thought,
+                        "action": f"{parsed.tool}[{parsed.tool_input}]",
+                        "observation": observation,
+                    }
+                    log.append(entry)
+                    scratchpad += f"\nThought: {parsed.thought}\nAction: {parsed.tool}[{parsed.tool_input}]\nObservation: {observation}\n"
+                    continue
+
+                log.append({"thought": parsed.thought})
+                scratchpad += f"\nThought: {parsed.thought}\n"
+                continue
+
+            last_thought = log[-1]["thought"] if log else question
+            if self.memory:
+                full_log = self._format_log_for_memory(question, log)
+                self.memory.save_context({"question": question}, {"text": full_log})
+            return {"answer": last_thought, "log": log}
+        except Exception as e:
+            self._fire("on_error", error=e)
+            raise
+
+    async def apply_async(self, questions: List[str]) -> List[str]:
+        """Run multiple questions concurrently via asyncio.gather.
+
+        Each question runs in an independent ReAct loop using
+        ``llm.agenerate()``. Results are returned in the same order
+        as the input questions.
+
+        This is the Agent counterpart to ``LLMChain.apply_async()``.
+
+        Args:
+            questions: A list of question strings.
+
+        Returns:
+            A list of answer strings, one per question, in the same
+            order as the input.
+        """
+        async def _run_one(q: str) -> str:
+            result = await self._arun_loop(q)
+            return result["answer"]
+
+        return await asyncio.gather(*[_run_one(q) for q in questions])
