@@ -23,6 +23,37 @@ Every Memory implementation exposes three methods:
 The history format is alternating ``Human: ...`` and ``AI: ...``
 lines, which LLMs naturally understand as a conversation log.
 
+Chat Model integration: load_messages()
+----------------------------------------
+
+Since v0.0.17 (Chat Model), Memory also supports returning typed
+messages via ``load_messages()`` — useful when working with
+``generate_messages()`` which expects ``SystemMessage``,
+``HumanMessage``, and ``AIMessage`` instances with correct roles:
+
+.. code-block:: python
+
+   memory = ConversationBufferMemory()
+   memory.save_context({"question": "hi"}, {"text": "hello"})
+
+   # String interface (existing)
+   ctx = memory.load_context()
+   # → "Human: hi\nAI: hello"
+
+   # Message interface (new)
+   msgs = memory.load_messages()
+   # → [HumanMessage("hi"), AIMessage("hello")]
+
+   # Bridge to Chat Model
+   msgs.append(HumanMessage("What is Python?"))
+   response = openai.generate_messages([msgs])
+
+``load_messages()`` returns alternating ``HumanMessage`` /
+``AIMessage`` pairs. ``ConversationSummaryMemory`` wraps the
+compressed summary in a ``HumanMessage``. The caller is responsible
+for adding ``SystemMessage`` at the prompt level — Memory only
+manages conversation history, not system prompts.
+
 Buffer vs Window vs Summary
 ----------------------------
 

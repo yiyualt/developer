@@ -5,14 +5,17 @@ Agents can automatically load and save across multiple run() calls.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, List
+
+from langchain.schema import BaseMessage
 
 
 class Memory(ABC):
     """Abstract base class for conversation memory.
 
-    Every Memory implementation exposes three methods: save_context
-    to store one round, load_context to return formatted history,
+    Every Memory implementation exposes four methods: save_context
+    to store one round, load_context to return formatted history
+    as a string, load_messages to return history as typed messages,
     and clear to reset stored history.
     """
 
@@ -33,6 +36,20 @@ class Memory(ABC):
         Returns:
             A string of alternating Human/AI lines, ready to prepend
             to a prompt. Returns empty string if no history is stored.
+        """
+        ...
+
+    @abstractmethod
+    def load_messages(self) -> List[BaseMessage]:
+        """Return conversation history as typed chat messages.
+
+        Returns:
+            A list of BaseMessage instances (HumanMessage, AIMessage)
+            in chronological order. Returns empty list if no history.
+
+            Use this method when working with Chat Model's
+            ``generate_messages()`` — the message roles are
+            preserved instead of being flattened into a string.
         """
         ...
 

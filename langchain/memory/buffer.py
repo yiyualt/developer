@@ -1,8 +1,9 @@
 """ConversationBufferMemory - store complete conversation history."""
 
-from typing import Dict
+from typing import Dict, List
 
 from langchain.memory.base import Memory
+from langchain.schema import AIMessage, BaseMessage, HumanMessage
 
 
 class ConversationBufferMemory(Memory):
@@ -29,6 +30,19 @@ class ConversationBufferMemory(Memory):
             lines.append(f"Human: {human}")
             lines.append(f"AI: {ai}")
         return "\n".join(lines)
+
+    def load_messages(self) -> List[BaseMessage]:
+        """Return complete history as alternating HumanMessage/AIMessage pairs.
+
+        Returns:
+            A list of HumanMessage and AIMessage instances in
+            chronological order. Empty list if no history.
+        """
+        messages: List[BaseMessage] = []
+        for human, ai in self._buffer:
+            messages.append(HumanMessage(content=human))
+            messages.append(AIMessage(content=ai))
+        return messages
 
     def clear(self) -> None:
         self._buffer.clear()

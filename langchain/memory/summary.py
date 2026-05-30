@@ -13,12 +13,13 @@ load_context() returns _summary + formatted recent _buffer,
 giving the LLM both the compressed past and the latest interactions.
 """
 
-from typing import Dict
+from typing import Dict, List
 
 from langchain.chains.llm_chain import LLMChain
 from langchain.llms.base import LLM
 from langchain.memory.base import Memory
 from langchain.prompts.prompt import PromptTemplate
+from langchain.schema import AIMessage, BaseMessage, HumanMessage
 
 
 INITIAL_SUMMARY_PROMPT = PromptTemplate(
@@ -127,6 +128,26 @@ class ConversationSummaryMemory(Memory):
         if self._buffer:
             parts.append(self._format_buffer())
         return "\n".join(parts)
+
+    def load_messages(self) -> List[BaseMessage]:
+        """Return conversation history as typed messages.
+
+        The summary (if any) is wrapped in a HumanMessage, followed
+        by recent buffer rounds as alternating HumanMessage/AIMessage
+        pairs.
+
+        Returns:
+            A list of BaseMessage instances. Empty list if no history.
+        """
+        messages: List[BaseMessage] = []
+        if self._summary:
+            messages.append(HumanMessage(
+                content=f"Summary of conversation so far:\n{self._summary}"
+            ))
+        for human, ai in self._buffer:
+            messages.append(HumanMessage(content=human))
+            messages.append(AIMessage(content=ai))
+        return messages
 
     def clear(self) -> None:
         """Reset summary and buffer."""

@@ -32,3 +32,14 @@ ConversationBufferWindowMemory SHALL store conversation history but only return 
 #### Scenario: K equals total rounds
 - **WHEN** ConversationBufferWindowMemory is created with k=5 and 3 rounds are saved
 - **THEN** `load_context()` returns all 3 rounds (no truncation needed)
+
+### Requirement: Memory load_messages for Chat Model bridge
+Memory SHALL define an abstract `load_messages() -> List[BaseMessage]` method. Each implementation SHALL return conversation history as alternating HumanMessage/AIMessage pairs. ConversationSummaryMemory SHALL wrap its summary in a HumanMessage. The existing `load_context() -> str` method SHALL be preserved unchanged.
+
+#### Scenario: BufferMemory returns message pairs
+- **WHEN** ConversationBufferMemory has stored turns ("hi"→"hello"), ("bye"→"goodbye")
+- **THEN** `load_messages()` SHALL return [HumanMessage("hi"), AIMessage("hello"), HumanMessage("bye"), AIMessage("goodbye")]
+
+#### Scenario: WindowMemory respects k in messages
+- **WHEN** ConversationBufferWindowMemory(k=1) has 3 stored turns
+- **THEN** `load_messages()` SHALL return only 2 messages (the most recent round)

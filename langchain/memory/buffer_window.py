@@ -1,8 +1,9 @@
 """ConversationBufferWindowMemory - keep only the last K rounds."""
 
-from typing import Dict
+from typing import Dict, List
 
 from langchain.memory.base import Memory
+from langchain.schema import AIMessage, BaseMessage, HumanMessage
 
 
 class ConversationBufferWindowMemory(Memory):
@@ -32,6 +33,19 @@ class ConversationBufferWindowMemory(Memory):
             lines.append(f"Human: {human}")
             lines.append(f"AI: {ai}")
         return "\n".join(lines)
+
+    def load_messages(self) -> List[BaseMessage]:
+        """Return the last K rounds as alternating HumanMessage/AIMessage pairs.
+
+        Returns:
+            A list of at most 2*K messages. Empty list if no history.
+        """
+        recent = self._buffer[-self.k:]
+        messages: List[BaseMessage] = []
+        for human, ai in recent:
+            messages.append(HumanMessage(content=human))
+            messages.append(AIMessage(content=ai))
+        return messages
 
     def clear(self) -> None:
         self._buffer.clear()
