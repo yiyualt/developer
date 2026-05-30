@@ -3,6 +3,7 @@
 from langchain.agents.agent import Agent
 from langchain.agents.orchestrator import MultiAgentOrchestrator, SequentialAgentChain
 from langchain.agents.plan_execute import PlanAndExecuteAgent
+from langchain.agents.self_correct import LLMCorrector, SelfCorrectingAgent
 from langchain.agents.tool import AgentTool
 from langchain.callbacks.base import CallbackHandler
 from langchain.callbacks.stdout import StdOutCallbackHandler
@@ -37,7 +38,7 @@ from langchain.vectorstores.base import VectorStore
 from langchain.vectorstores.simple import SimpleVectorStore
 
 __all__ = [
-    "Agent", "AgentTool", "MultiAgentOrchestrator", "PlanAndExecuteAgent", "SequentialAgentChain", "LLMChain", "RetrievalChain", "SequentialChain",
+    "Agent", "AgentTool", "LLMCorrector", "MultiAgentOrchestrator", "PlanAndExecuteAgent", "SelfCorrectingAgent", "SequentialAgentChain", "LLMChain", "RetrievalChain", "SequentialChain",
     "RouterChain", "LLMRouterChain", "ChainDestination",
     "LLM", "OpenAI", "PromptTemplate", "ChatPromptTemplate",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
