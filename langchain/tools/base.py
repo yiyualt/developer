@@ -41,6 +41,36 @@ class Tool(ABC, CallbackMixin):
         """
         ...
 
+    def to_json_schema(self) -> dict:
+        """Return OpenAI function-calling JSON Schema for this tool.
+
+        The default schema has a single ``input`` string parameter.
+        Subclasses may override this to provide more structured
+        parameter definitions.
+
+        Returns:
+            A dict in OpenAI function calling format with
+            ``type``, ``function.name``, ``function.description``,
+            and ``function.parameters`` keys.
+        """
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "input": {
+                            "type": "string",
+                            "description": "The input to the tool.",
+                        }
+                    },
+                    "required": ["input"],
+                },
+            },
+        }
+
     def run(self, input: str) -> str:
         """Execute the tool with the given input and return the result.
 

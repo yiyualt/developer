@@ -185,6 +185,54 @@ class OpenAI(LLM):
 
         return await asyncio.gather(*[_call_one(msgs) for msgs in messages_list])
 
+    def generate_with_tools(
+        self, messages_list: List[List], tools: List
+    ) -> List[dict]:
+        """Generate responses with native function/tool calling.
+
+        Sends tool definitions to the Chat Completions API. The model
+        may either respond with text (``content``) or request to call
+        a tool (``tool_calls``). No string parsing needed — the API
+        returns structured JSON.
+
+        Args:
+            messages_list: List of conversation turns (list of message
+                instances with ``role`` and ``content``).
+            tools: List of Tool instances (must have ``to_json_schema()``).
+
+        Returns:
+            List of dicts with:
+            - ``content``: str or None (text response from the model)
+            - ``tool_calls``: list of dicts with ``name`` and ``arguments``
+        """
+        tool_schemas = [t.to_json_schema() for t in tools]
+        responses = []
+        for messages in messages_list:
+            api_messages = [
+                {"role": msg.role, "content": msg.content}
+                for msg in messages
+            ]
+            completion = self._client.chat.completions.create(
+                model=self.model_name,
+                messages=api_messages,
+                tools=tool_schemas,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+            choice = completion.choices[0]
+            tool_calls = []
+            if choice.message.tool_calls:
+                for tc in choice.message.tool_calls:
+                    tool_calls.append({
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    })
+            responses.append({
+                "content": choice.message.content,
+                "tool_calls": tool_calls,
+            })
+        return responses
+
     def _stream(self, prompt: str) -> Generator[str, None, None]:
         """Stream tokens for a single prompt via Chat Completions API.
 

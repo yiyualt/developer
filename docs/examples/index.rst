@@ -18,6 +18,7 @@ own use case.
    plan-execute-example
    chat-model-example
    conversational-agent-example
+   function-calling-example
    self-correction-example
    memory-example
    retrieval-example
