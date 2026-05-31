@@ -103,6 +103,12 @@ PyTorch 风格文档体系：
 - 搜索重复逻辑：如果两个方法逻辑完全相同（逐行比对），必须合并
 - 反例：`_run_loop` 和 `_arun_loop` 完全相同的 ReAct 循环 → 应该用一个带参数的方法
 
+### 文档完整性
+- 检查所有示例代码**必须可运行**——不能有 `...` 占位符、未定义的变量、伪代码
+  - 检查命令：`grep -n "\.\.\." docs/examples/*.rst | grep -v "output\|truncat\|summary\|..."`（需要人工判断哪些是合法截断）
+  - 反例：`tools=[...]`、`agent.run("...")`、`# ... (setup steps)` — 必须替换为真实代码
+- 检查 toctree 是否已注册新文件：`grep <new-file> docs/notes/index.rst docs/examples/index.rst`
+
 ### 测试覆盖
 - 运行新测试文件：`PYTHONPATH=. python tests/test_<feature>.py`，确保全部通过
 - 运行所有已有测试套件，确认零回归

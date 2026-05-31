@@ -11,7 +11,7 @@ into a single Agent.
 """
 
 import asyncio
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from langchain.agents.output_parser import (
     AgentAction,
@@ -77,6 +77,7 @@ class ConversationalAgent(CallbackMixin):
         max_iterations: int = 5,
         callbacks: Optional[List[CallbackHandler]] = None,
         description: str = "",
+        approver: Optional[Callable[[str, str], tuple]] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
@@ -85,6 +86,7 @@ class ConversationalAgent(CallbackMixin):
         self.max_iterations = max_iterations
         self.callbacks = callbacks or []
         self.description = description
+        self.approver = approver
         self._tool_map = {t.name: t for t in tools}
 
     def _build_tool_descriptions(self) -> str:
@@ -95,6 +97,11 @@ class ConversationalAgent(CallbackMixin):
         tool = self._tool_map.get(action.tool)
         if tool is None:
             return f"Error: tool '{action.tool}' not found"
+        if tool.requires_approval and self.approver:
+            approved, modified = self.approver(action.tool, action.tool_input)
+            if not approved:
+                return f"Tool '{action.tool}' rejected by human reviewer."
+            action.tool_input = modified
         return tool.run(action.tool_input)
 
     def _build_messages(self, question: str) -> List:

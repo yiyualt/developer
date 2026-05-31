@@ -7,7 +7,7 @@ is appended to the prompt for the next iteration.
 """
 
 import asyncio
-from typing import Dict, Generator, List, Optional
+from typing import Callable, Dict, Generator, List, Optional
 
 from langchain.agents.output_parser import (
     AgentAction,
@@ -80,6 +80,7 @@ class Agent(CallbackMixin):
         memory: Optional[Memory] = None,
         callbacks: Optional[List[CallbackHandler]] = None,
         description: str = "",
+        approver: Optional[Callable[[str, str], tuple]] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
@@ -87,6 +88,7 @@ class Agent(CallbackMixin):
         self.memory = memory
         self.callbacks = callbacks or []
         self.description = description
+        self.approver = approver
         self._tool_map = {t.name: t for t in tools}
 
     def _build_tool_descriptions(self) -> str:
@@ -123,6 +125,12 @@ class Agent(CallbackMixin):
         tool = self._tool_map.get(action.tool)
         if tool is None:
             return f"Error: tool '{action.tool}' not found. Available: {list(self._tool_map.keys())}"
+        # Human-in-the-loop: if tool requires approval and approver is set
+        if tool.requires_approval and self.approver:
+            approved, modified = self.approver(action.tool, action.tool_input)
+            if not approved:
+                return f"Tool '{action.tool}' rejected by human reviewer."
+            action.tool_input = modified
         return tool.run(action.tool_input)
 
     def run(self, question: str) -> str:

@@ -82,8 +82,14 @@ document retrieval or can be answered from general knowledge.
        TextLoader, TextSplitter,
    )
 
-   # Set up a RetrievalChain (see retrieval-example.rst for full setup)
-   # ... (load, split, embed, store steps as before)
+   # Set up a RetrievalChain from sample documents
+   loader = TextLoader("data/sample.txt")
+   documents = loader.load()
+   splitter = TextSplitter(chunk_size=500, chunk_overlap=50)
+   chunks = splitter.split_documents(documents)
+   embeddings = LocalEmbeddings()
+   vectorstore = SimpleVectorStore()
+   vectorstore.add_documents(chunks, embeddings)
    rag_chain = RetrievalChain(
        vectorstore=vectorstore,
        embeddings=LocalEmbeddings(),

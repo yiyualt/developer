@@ -21,6 +21,7 @@ the way they do, similar to PyTorch's "Notes" tradition.
    conversational-agent-philosophy
    function-calling-philosophy
    lcel-philosophy
+   hitl-philosophy
    self-correction-philosophy
    memory-design
    retrieval-philosophy

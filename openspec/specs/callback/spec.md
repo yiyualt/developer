@@ -25,3 +25,6 @@ StdOutCallbackHandler SHALL be a built-in CallbackHandler that prints execution 
 #### Scenario: StdOut handler prints errors
 - **WHEN** StdOutCallbackHandler is attached and an LLM call raises an error
 - **THEN** stdout shows `[LLM] Error: <error message>`
+
+### Requirement: CallbackMixin provides shared _fire
+CallbackMixin SHALL be a class providing `_fire(event, **kwargs)` that iterates `self.callbacks` and invokes the matching method on each handler. All components that support callbacks SHALL inherit CallbackMixin instead of duplicating `_fire`.

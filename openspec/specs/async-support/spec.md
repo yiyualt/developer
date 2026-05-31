@@ -14,3 +14,10 @@ LLM SHALL support async concurrent generation via ``agenerate(prompts: list[str]
 #### Scenario: Async generate preserves order
 - **WHEN** ``agenerate(["prompt1", "prompt2", "prompt3"])`` is called on an LLM subclass that implements ``_agenerate``
 - **THEN** responses are returned in the same order as input prompts
+
+### Requirement: Async Agent support
+Agent SHALL support async concurrent execution via ``apply_async(questions: list[str]) -> list[str]`` async method using ``asyncio.gather``. Each question SHALL run in an independent ReAct loop using ``llm.agenerate()``. Results SHALL be returned in the same order as input questions.
+
+#### Scenario: Concurrent Agent runs
+- **WHEN** ``await agent.apply_async(["What is 2+2?", "What is 3+3?"])`` is called
+- **THEN** the result SHALL be `["4", "6"]` in the same order
