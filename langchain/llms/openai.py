@@ -154,6 +154,37 @@ class OpenAI(LLM):
             responses.append(completion.choices[0].message.content)
         return responses
 
+    async def agenerate_messages(
+        self, messages_list: List[List]
+    ) -> List[str]:
+        """Concurrently generate responses from structured chat messages.
+
+        Async version of ``generate_messages()``. Uses the AsyncOpenAI
+        client with ``asyncio.gather`` for concurrent API calls.
+
+        Args:
+            messages_list: A list of conversation turns, where each
+                turn is a list of message instances with ``role``
+                and ``content`` attributes.
+
+        Returns:
+            A list of response strings, in the same order as input.
+        """
+        async def _call_one(messages):
+            api_messages = [
+                {"role": msg.role, "content": msg.content}
+                for msg in messages
+            ]
+            completion = await self._async_client.chat.completions.create(
+                model=self.model_name,
+                messages=api_messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+            return completion.choices[0].message.content
+
+        return await asyncio.gather(*[_call_one(msgs) for msgs in messages_list])
+
     def _stream(self, prompt: str) -> Generator[str, None, None]:
         """Stream tokens for a single prompt via Chat Completions API.
 

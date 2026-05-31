@@ -89,6 +89,30 @@ PyTorch 风格文档体系：
 ### Schema / 数据对象
 - 基础数据结构放在 `langchain/schema.py`（当前有 `Document`、`BaseMessage`、`SystemMessage`、`HumanMessage`、`AIMessage`）
 
+## 实施后校验（交付前必须执行）
+
+每次 `openspec-apply-change` 完成后、告知用户之前，**必须**执行以下校验：
+
+### async 真伪验证
+- 如果新增了 `async def` 方法，确认它内部**实际调用了 await**，而非同步调用包装成 async
+- 检查：`agenerate_messages()` / `agenerate()` / `apply_async()` 等 async 方法必须调用对应的 async LLM 方法，**不能**内部调 sync 方法而让 `asyncio.gather` 空转
+- 反例：`async def _arun_loop` 内部调用 `self.llm.generate_messages()`（sync） → asyncio.gather 不并发
+
+### 代码质量
+- 搜索新代码中的死代码：`grep -n "def _" <file>` 检查是否有未被调用的私有方法
+- 搜索重复逻辑：如果两个方法逻辑完全相同（逐行比对），必须合并
+- 反例：`_run_loop` 和 `_arun_loop` 完全相同的 ReAct 循环 → 应该用一个带参数的方法
+
+### 测试覆盖
+- 运行新测试文件：`PYTHONPATH=. python tests/test_<feature>.py`，确保全部通过
+- 运行所有已有测试套件，确认零回归
+- 如果新增了 async 方法，测试**必须**实际验证并发（检查 `asyncio.gather` 被调用、结果顺序正确）
+
+### 文档完整性
+- 检查是否创建/更新了对应的 notes 和 examples 文件
+- 检查 toctree 是否已注册
+- 检查 docs 是否已重建
+
 ## OpenSpec 工作流
 
 - 使用 openspec CLI 管理变更（从项目根目录运行）

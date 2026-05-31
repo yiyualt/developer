@@ -18,6 +18,7 @@ the way they do, similar to PyTorch's "Notes" tradition.
    agent-composition-philosophy
    plan-execute-philosophy
    chat-model-philosophy
+   conversational-agent-philosophy
    self-correction-philosophy
    memory-design
    retrieval-philosophy
