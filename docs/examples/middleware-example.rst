@@ -1,5 +1,5 @@
-Human-in-the-Loop Example
-=========================
+Middleware Examples
+==================
 
 Require human approval before executing specific tools — configured
 entirely on middleware, not on tools.
@@ -102,3 +102,26 @@ Detect and redact sensitive data before it reaches tools:
    agent.run("Send invoice to bob@example.com, card 4111-1111-1111-1111")
    # SendEmailTool receives:
    # "Send invoice to [REDACTED], card ************1111"
+
+Runtime limits
+--------------
+
+Limit LLM and tool calls to prevent runaway loops:
+
+.. code-block:: python
+
+   from langchain.agents.middleware import (
+       ModelCallLimitMiddleware, ToolCallLimitMiddleware,
+   )
+
+   agent = Agent(
+       llm=llm, tools=[CalculatorTool(), SearchTool()],
+       middleware=[
+           ModelCallLimitMiddleware(max_calls=20),
+           ToolCallLimitMiddleware(
+               max_calls=10,
+               per_tool={"calculator": 3, "search": 5},
+           ),
+       ],
+   )
+   agent.run("Research Python and calculate 42*7")

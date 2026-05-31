@@ -20,7 +20,7 @@ own use case.
    conversational-agent-example
    function-calling-example
    lcel-example
-   hitl-example
+   middleware-example
    self-correction-example
    memory-example
    retrieval-example

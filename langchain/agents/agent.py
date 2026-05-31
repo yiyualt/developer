@@ -144,6 +144,8 @@ class Agent(CallbackMixin):
             The Final Answer string from the LLM, or the last
             Thought if max_iterations is reached.
         """
+        for mw in self.middleware:
+            mw.reset()
         result = self._run_loop(question)
         return result["answer"]
 

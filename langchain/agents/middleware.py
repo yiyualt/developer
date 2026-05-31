@@ -33,6 +33,13 @@ class Middleware(ABC):
         """
         return (True, tool_input)
 
+    def reset(self) -> None:
+        """Reset any internal state between ``Agent.run()`` calls.
+
+        Called at the start of each ``run()``. Override to clear
+        counters, flush audit logs, or reset per-run state.
+        """
+
     def before_llm(self, messages: list) -> list:
         """Called before every LLM call. Return transformed messages.
 
@@ -223,3 +230,88 @@ class SummarizationMiddleware(Middleware):
             f"Conversation:\n{text}\n\nSummary:"
         )
         return self._llm.generate([prompt])[0]
+
+
+class ModelCallLimitMiddleware(Middleware):
+    """Cap the number of LLM calls per Agent run.
+
+    Each call to ``before_llm`` increments an internal counter. When
+    ``max_calls`` is exceeded, returns a single limit message instead
+    of the original messages — stopping the Agent from making more
+    LLM calls.
+
+    Args:
+        max_calls: Maximum number of LLM calls allowed. Default 20.
+
+    Examples:
+        >>> agent = Agent(
+        ...     llm=llm, tools=[...],
+        ...     middleware=[ModelCallLimitMiddleware(max_calls=10)],
+        ... )
+    """
+
+    def __init__(self, max_calls: int = 20) -> None:
+        self.max_calls = max_calls
+        self._count = 0
+
+    def reset(self) -> None:
+        self._count = 0
+
+    def before_llm(self, messages: list) -> list:
+        self._count += 1
+        if self._count > self.max_calls:
+            from langchain.schema import HumanMessage
+            return [HumanMessage(content="Model call limit exceeded.")]
+        return messages
+
+
+class ToolCallLimitMiddleware(Middleware):
+    """Cap the number of tool calls, globally or per tool.
+
+    Each call to ``before_tool`` increments counters. Limits can be
+    set globally (``max_calls``) or per-tool (``per_tool`` dict).
+    When a limit is exceeded, ``before_tool`` returns ``(False, msg)``
+    and the tool is skipped.
+
+    Args:
+        max_calls: Global limit across all tools. None = no global limit.
+        per_tool: Dict mapping tool name to max calls for that tool.
+            Tools not listed have no limit (unless max_calls applies).
+
+    Examples:
+        >>> agent = Agent(
+        ...     llm=llm, tools=[calculator, search],
+        ...     middleware=[
+        ...         ToolCallLimitMiddleware(
+        ...             max_calls=10,
+        ...             per_tool={"calculator": 3},
+        ...         ),
+        ...     ],
+        ... )
+    """
+
+    def __init__(
+        self,
+        max_calls: Optional[int] = None,
+        per_tool: Optional[Dict[str, int]] = None,
+    ) -> None:
+        self.max_calls = max_calls
+        self.per_tool = per_tool or {}
+        self._counts: Dict[str, int] = {}
+
+    def reset(self) -> None:
+        self._counts.clear()
+
+    def before_tool(self, tool_name: str, tool_input: str) -> tuple:
+        self._counts[tool_name] = self._counts.get(tool_name, 0) + 1
+
+        if tool_name in self.per_tool:
+            if self._counts[tool_name] > self.per_tool[tool_name]:
+                return (False, f"Tool '{tool_name}' call limit exceeded.")
+
+        if self.max_calls is not None:
+            total = sum(self._counts.values())
+            if total > self.max_calls:
+                return (False, "Global tool call limit exceeded.")
+
+        return (True, tool_input)

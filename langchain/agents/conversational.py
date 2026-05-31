@@ -199,6 +199,8 @@ class ConversationalAgent(CallbackMixin):
         return await self._react_loop(question, use_async=True)
 
     def run(self, question: str) -> str:
+        for mw in self.middleware:
+            mw.reset()
         return self._run_loop(question)["answer"]
 
     def run_with_log(self, question: str) -> Dict:
