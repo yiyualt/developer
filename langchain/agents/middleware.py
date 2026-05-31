@@ -9,7 +9,7 @@ behaviors without modifying Agent internals.
 
 import re
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class Middleware(ABC):
@@ -32,6 +32,20 @@ class Middleware(ABC):
             Agent receives a rejection message as the Observation.
         """
         return (True, tool_input)
+
+    def before_llm(self, messages: list) -> list:
+        """Called before every LLM call. Return transformed messages.
+
+        Subclasses may override this to compress, filter, or augment
+        the message list before it is sent to the LLM.
+
+        Args:
+            messages: The list of messages about to be sent to the LLM.
+
+        Returns:
+            The (possibly transformed) message list.
+        """
+        return messages
 
 
 class HumanInTheLoopMiddleware(Middleware):
@@ -148,3 +162,64 @@ class PIIMiddleware(Middleware):
         if len(text) > 4:
             return "*" * (len(text) - 4) + text[-4:]
         return "****"
+
+
+class SummarizationMiddleware(Middleware):
+    """Compress older conversation messages when approaching token limits.
+
+    Before each LLM call, checks the total character count. If it
+    exceeds ``max_tokens * 4`` (approx 4 chars per token), older
+    messages are summarized by an LLM into a single HumanMessage,
+    keeping the most recent ``keep_recent`` messages intact.
+
+    Args:
+        llm: LLM instance for generating summaries.
+        max_tokens: Approximate token threshold. Default 4000.
+        keep_recent: Number of most recent messages to keep
+            un-summarized. Default 3.
+
+    Examples:
+        >>> agent = Agent(
+        ...     llm=llm, tools=[...],
+        ...     middleware=[
+        ...         SummarizationMiddleware(
+        ...             llm=llm, max_tokens=2000, keep_recent=3,
+        ...         ),
+        ...     ],
+        ... )
+    """
+
+    def __init__(
+        self, llm, max_tokens: int = 4000, keep_recent: int = 3
+    ) -> None:
+        self._llm = llm
+        self.max_tokens = max_tokens
+        self.keep_recent = keep_recent
+
+    def before_llm(self, messages: list) -> list:
+        total_chars = sum(len(m.content) for m in messages if hasattr(m, "content"))
+        if total_chars < self.max_tokens * 4:
+            return messages
+
+        if len(messages) <= self.keep_recent:
+            return messages
+
+        split = len(messages) - self.keep_recent
+        older = messages[:split]
+        recent = messages[split:]
+
+        combined = "\n".join(
+            f"[{m.role}]: {m.content}" for m in older if hasattr(m, "role")
+        )
+        summary = self._summarize(combined)
+
+        from langchain.schema import HumanMessage
+        return [HumanMessage(content=f"Previous conversation summary:\n{summary}")] + list(recent)
+
+    def _summarize(self, text: str) -> str:
+        prompt = (
+            "Summarize the following conversation concisely, "
+            "preserving key facts, decisions, and important details.\n\n"
+            f"Conversation:\n{text}\n\nSummary:"
+        )
+        return self._llm.generate([prompt])[0]

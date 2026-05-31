@@ -139,6 +139,9 @@ class ConversationalAgent(CallbackMixin):
                 react_prompt = self._build_react_prompt(scratchpad)
                 call_messages = base_messages + [HumanMessage(content=react_prompt)]
 
+                for mw in self.middleware:
+                    call_messages = mw.before_llm(call_messages)
+
                 if use_async:
                     response = (await self.llm.agenerate_messages([call_messages]))[0]
                 else:

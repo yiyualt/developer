@@ -3,7 +3,9 @@
 from langchain.agents.agent import Agent
 from langchain.agents.conversational import ConversationalAgent
 from langchain.agents.function_calling import FunctionCallingAgent
-from langchain.agents.middleware import HumanInTheLoopMiddleware, Middleware, PIIMiddleware
+from langchain.agents.middleware import (
+    HumanInTheLoopMiddleware, Middleware, PIIMiddleware, SummarizationMiddleware
+)
 from langchain.agents.orchestrator import MultiAgentOrchestrator, SequentialAgentChain
 from langchain.agents.plan_execute import PlanAndExecuteAgent
 from langchain.agents.self_correct import LLMCorrector, SelfCorrectingAgent
@@ -42,7 +44,7 @@ from langchain.vectorstores.base import VectorStore
 from langchain.vectorstores.simple import SimpleVectorStore
 
 __all__ = [
-    "Agent", "AgentTool", "ConversationalAgent", "FunctionCallingAgent", "HumanInTheLoopMiddleware", "LLMCorrector", "Middleware", "MultiAgentOrchestrator", "PIIMiddleware", "PlanAndExecuteAgent", "SelfCorrectingAgent", "SequentialAgentChain", "LLMChain", "RetrievalChain", "SequentialChain",
+    "Agent", "AgentTool", "ConversationalAgent", "FunctionCallingAgent", "HumanInTheLoopMiddleware", "LLMCorrector", "Middleware", "MultiAgentOrchestrator", "PIIMiddleware", "PlanAndExecuteAgent", "SelfCorrectingAgent", "SequentialAgentChain", "SummarizationMiddleware", "LLMChain", "RetrievalChain", "SequentialChain",
     "RouterChain", "LLMRouterChain", "ChainDestination",
     "LLM", "OpenAI", "PromptTemplate", "ChatPromptTemplate",
     "Runnable", "RunnableSequence",
