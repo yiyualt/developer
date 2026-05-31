@@ -132,7 +132,10 @@ class Agent(CallbackMixin):
             if not proceed:
                 return f"Tool '{action.tool}' rejected by middleware."
             action.tool_input = modified
-        return tool.run(action.tool_input)
+        result = tool.run(action.tool_input)
+        for mw in self.middleware:
+            result = mw.after_tool(action.tool, action.tool_input, result)
+        return result
 
     def run(self, question: str) -> str:
         """Execute the ReAct loop and return the Final Answer.
@@ -255,6 +258,8 @@ class Agent(CallbackMixin):
                     response = (await self.llm.agenerate([prompt]))[0]
                 else:
                     response = self.llm.generate([prompt])[0]
+                for mw in self.middleware:
+                    response = mw.after_llm([], response)
                 parsed = parse_agent_output(response)
 
                 if isinstance(parsed, AgentFinish):

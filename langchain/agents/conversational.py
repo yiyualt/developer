@@ -103,7 +103,10 @@ class ConversationalAgent(CallbackMixin):
             if not proceed:
                 return f"Tool '{action.tool}' rejected by middleware."
             action.tool_input = modified
-        return tool.run(action.tool_input)
+        result = tool.run(action.tool_input)
+        for mw in self.middleware:
+            result = mw.after_tool(action.tool, action.tool_input, result)
+        return result
 
     def _build_messages(self, question: str) -> List:
         """Build the base message list: system + history + question."""
@@ -146,6 +149,9 @@ class ConversationalAgent(CallbackMixin):
                     response = (await self.llm.agenerate_messages([call_messages]))[0]
                 else:
                     response = self.llm.generate_messages([call_messages])[0]
+
+                for mw in self.middleware:
+                    response = mw.after_llm(call_messages, response)
 
                 parsed = parse_agent_output(response)
 

@@ -54,6 +54,37 @@ class Middleware(ABC):
         """
         return messages
 
+    def after_llm(self, messages: list, response: str) -> str:
+        """Called after every LLM call. Return (possibly transformed) response.
+
+        Subclasses may override this to implement fallback, retry,
+        or response transformation.
+
+        Args:
+            messages: The message list that was sent to the LLM.
+            response: The raw response string from the LLM.
+
+        Returns:
+            The (possibly transformed) response string.
+        """
+        return response
+
+    def after_tool(self, tool_name: str, tool_input: str, result: str) -> str:
+        """Called after every tool execution. Return (possibly transformed) result.
+
+        Subclasses may override this to implement retry, result
+        transformation, or error recovery.
+
+        Args:
+            tool_name: The name of the tool that was called.
+            tool_input: The input that was passed to the tool.
+            result: The result string returned by the tool.
+
+        Returns:
+            The (possibly transformed) result string.
+        """
+        return result
+
 
 class HumanInTheLoopMiddleware(Middleware):
     """Require human approval before executing specific tools.
