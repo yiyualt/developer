@@ -7,10 +7,12 @@ complete prompt string for an LLM.
 
 import re
 from string import Formatter
-from typing import List
+from typing import Any, List
+
+from langchain.runnables import Runnable
 
 
-class PromptTemplate:
+class PromptTemplate(Runnable):
     """A template string with ``{variable}`` placeholders for prompt generation.
 
     PromptTemplate extracts variable names from a template string and
@@ -90,3 +92,14 @@ class PromptTemplate:
             )
 
         return self.template.format(**kwargs)
+
+    def invoke(self, input: Any, **kwargs: Any) -> Any:
+        """Runnable interface — format the template from a dict of variables.
+
+        Args:
+            input: Dict of variable values (e.g. ``{"topic": "Python"}``).
+
+        Returns:
+            The formatted prompt string.
+        """
+        return self.format(**input)

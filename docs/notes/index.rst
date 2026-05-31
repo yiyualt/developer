@@ -20,6 +20,7 @@ the way they do, similar to PyTorch's "Notes" tradition.
    chat-model-philosophy
    conversational-agent-philosophy
    function-calling-philosophy
+   lcel-philosophy
    self-correction-philosophy
    memory-design
    retrieval-philosophy

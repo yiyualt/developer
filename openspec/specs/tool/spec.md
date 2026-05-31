@@ -15,6 +15,13 @@ Tool SHALL be an abstract base class defining three attributes: `name` (a unique
 - **WHEN** a Tool with callbacks=[handler] calls `run()` and execution raises an exception
 - **THEN** handler receives on_error(error=<the exception>) and on_tool_end is NOT called
 
+### Requirement: Tool JSON Schema for function calling
+Tool SHALL provide a `to_json_schema()` method returning a dict in OpenAI function calling format with `type`, `function.name`, `function.description`, and `function.parameters`. The default parameters SHALL be `{"type": "object", "properties": {"input": {"type": "string"}}}`.
+
+#### Scenario: CalculatorTool JSON Schema
+- **WHEN** CalculatorTool().to_json_schema() is called
+- **THEN** the result SHALL have `type="function"` and `function.name="calculator"` and include `parameters.properties.input`
+
 ### Requirement: CalculatorTool
 CalculatorTool SHALL evaluate simple arithmetic expressions provided as input string and return the result as a string.
 

@@ -4,11 +4,13 @@ LLMs return free-form text strings. OutputParser converts those strings
 into structured Python data that programs can use — dicts, lists, enums, etc.
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any
 
+from langchain.runnables import Runnable
 
-class OutputParser(ABC):
+
+class OutputParser(Runnable):
     """Abstract base class for LLM output parsers.
 
     All OutputParser subclasses MUST implement the ``parse`` method,
@@ -38,3 +40,14 @@ class OutputParser(ABC):
         Raises:
             ValueError: If the text cannot be parsed into the expected format.
         """
+
+    def invoke(self, input: Any, **kwargs: Any) -> Any:
+        """Runnable interface — parse raw LLM output.
+
+        Args:
+            input: The raw text string from an LLM.
+
+        Returns:
+            The parsed Python object.
+        """
+        return self.parse(input)

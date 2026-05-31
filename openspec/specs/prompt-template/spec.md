@@ -32,3 +32,10 @@ PromptTemplate SHALL validate that all provided input variables match the variab
 #### Scenario: Extra unexpected variable
 - **WHEN** PromptTemplate with template `"Hello {name}"` is called with `format(name="Alice", age=30)`
 - **THEN** an error is raised indicating that `age` is not an input variable
+
+### Requirement: PromptTemplate implements Runnable
+PromptTemplate SHALL implement the Runnable interface. `invoke(input: dict)` SHALL delegate to `format(**input)`.
+
+#### Scenario: invoke formats template
+- **WHEN** `PromptTemplate("Hello {name}").invoke({"name": "World"})` is called
+- **THEN** the result SHALL be "Hello World"

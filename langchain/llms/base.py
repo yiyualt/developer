@@ -5,11 +5,13 @@ LangChain v0.0.1 defines a single unified interface for LLM interaction:
 The public ``generate`` method handles the contract between caller and model.
 """
 
-from abc import ABC, abstractmethod
-from typing import Generator, List
+from abc import abstractmethod
+from typing import Any, Generator, List
+
+from langchain.runnables import Runnable
 
 
-class LLM(ABC):
+class LLM(Runnable):
     """Abstract base class for large language model implementations.
 
     All LLM subclasses MUST implement the ``_generate`` method, which
@@ -54,6 +56,17 @@ class LLM(ABC):
             A list of response strings, one for each input prompt.
         """
         return self._generate(prompts)
+
+    def invoke(self, input: Any, **kwargs: Any) -> Any:
+        """Runnable interface — generate a response from a prompt string.
+
+        Args:
+            input: A prompt string.
+
+        Returns:
+            The LLM's response string.
+        """
+        return self.generate([input])[0]
 
     def _stream(self, prompt: str) -> Generator[str, None, None]:
         """Stream tokens for a single prompt.

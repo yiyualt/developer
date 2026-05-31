@@ -27,6 +27,7 @@ from langchain.memory.summary import ConversationSummaryMemory
 from langchain.output_parsers.base import OutputParser
 from langchain.output_parsers.json import JsonOutputParser
 from langchain.output_parsers.list import ListOutputParser
+from langchain.runnables import Runnable, RunnableSequence
 from langchain.prompts.prompt import PromptTemplate
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.schema import AIMessage, BaseMessage, Document, HumanMessage, SystemMessage
@@ -43,6 +44,7 @@ __all__ = [
     "Agent", "AgentTool", "ConversationalAgent", "FunctionCallingAgent", "LLMCorrector", "MultiAgentOrchestrator", "PlanAndExecuteAgent", "SelfCorrectingAgent", "SequentialAgentChain", "LLMChain", "RetrievalChain", "SequentialChain",
     "RouterChain", "LLMRouterChain", "ChainDestination",
     "LLM", "OpenAI", "PromptTemplate", "ChatPromptTemplate",
+    "Runnable", "RunnableSequence",
     "OutputParser", "JsonOutputParser", "ListOutputParser",
     "Tool", "CalculatorTool", "SearchTool", "PythonREPLTool", "tool",
     "Memory", "ConversationBufferMemory", "ConversationBufferWindowMemory", "ConversationSummaryMemory",

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: OutputParser abstract base class
-OutputParser SHALL be an abstract base class that defines the `parse(text: str) -> Any` interface. Subclasses MUST implement the `parse` method.
+OutputParser SHALL be an abstract base class that defines the `parse(text: str) -> Any` interface. Subclasses MUST implement the `parse` method. OutputParser SHALL implement the Runnable interface; `invoke(input: str)` SHALL delegate to `parse(input)`.
 
 #### Scenario: Subclass implements parse
 - **WHEN** a class inherits from OutputParser and implements `parse(text: str)`

@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: LLM abstract base class
-The LLM class SHALL be an abstract base class that defines the interface for all language model implementations. Subclasses MUST implement the `_generate` method. Subclasses MAY implement the `_stream` method for streaming generation; if `_stream` is not implemented, calling `stream()` SHALL raise NotImplementedError. Subclasses MAY implement the `_agenerate` method for async concurrent generation; if `_agenerate` is not implemented, calling `agenerate()` SHALL fall back to synchronous `generate()`.
+The LLM class SHALL be an abstract base class that defines the interface for all language model implementations. Subclasses MUST implement the `_generate` method. Subclasses MAY implement the `_stream` method for streaming generation; if `_stream` is not implemented, calling `stream()` SHALL raise NotImplementedError. Subclasses MAY implement the `_agenerate` method for async concurrent generation; if `_agenerate` is not implemented, calling `agenerate()` SHALL fall back to synchronous `generate()`. LLM SHALL implement the Runnable interface; `invoke(prompt: str)` SHALL delegate to `generate([prompt])[0]`.
 
 #### Scenario: Subclass implements _generate
 - **WHEN** a class inherits from LLM and implements `_generate(prompts: list[str]) -> list[str]`

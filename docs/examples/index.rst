@@ -19,6 +19,7 @@ own use case.
    chat-model-example
    conversational-agent-example
    function-calling-example
+   lcel-example
    self-correction-example
    memory-example
    retrieval-example
