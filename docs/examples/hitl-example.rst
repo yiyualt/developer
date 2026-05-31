@@ -58,7 +58,9 @@ Per-tool configuration
        },
        approver=terminal_approver,
    )
-   agent = Agent(llm=llm, tools=[...], middleware=[hitl])
+   agent = Agent(
+       llm=llm, tools=[CalculatorTool(), SendEmailTool()], middleware=[hitl]
+   )
 
 Audit log (always-approve + record)
 ------------------------------------
@@ -72,9 +74,31 @@ Audit log (always-approve + record)
        return True, arguments
 
    hitl = HumanInTheLoopMiddleware(
-       interrupt_on={"send_email": True, "write_db": True},
+       interrupt_on={"send_email": True},
        approver=logging_approver,
    )
-   agent = Agent(llm=llm, tools=[...], middleware=[hitl])
-   agent.run("Send the weekly report")
+   agent = Agent(
+       llm=llm, tools=[CalculatorTool(), SendEmailTool()], middleware=[hitl]
+   )
+   agent.run("Send the weekly report to boss@example.com")
    print("Audit log:", audit_log)
+
+PII detection
+-------------
+
+Detect and redact sensitive data before it reaches tools:
+
+.. code-block:: python
+
+   from langchain.agents.middleware import PIIMiddleware
+
+   agent = Agent(
+       llm=llm, tools=[SendEmailTool()],
+       middleware=[
+           PIIMiddleware("email", strategy="redact"),
+           PIIMiddleware("credit_card", strategy="mask"),
+       ],
+   )
+   agent.run("Send invoice to bob@example.com, card 4111-1111-1111-1111")
+   # SendEmailTool receives:
+   # "Send invoice to [REDACTED], card ************1111"

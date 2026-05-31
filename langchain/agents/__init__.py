@@ -3,11 +3,11 @@
 from langchain.agents.agent import Agent
 from langchain.agents.conversational import ConversationalAgent
 from langchain.agents.function_calling import FunctionCallingAgent
-from langchain.agents.middleware import HumanInTheLoopMiddleware, Middleware
+from langchain.agents.middleware import HumanInTheLoopMiddleware, Middleware, PIIMiddleware
 from langchain.agents.orchestrator import MultiAgentOrchestrator, SequentialAgentChain
 from langchain.agents.plan_execute import PlanAndExecuteAgent
 from langchain.agents.self_correct import LLMCorrector, SelfCorrectingAgent
 from langchain.agents.tool import AgentTool
 
-__all__ = ["Agent", "AgentTool", "ConversationalAgent", "FunctionCallingAgent", "HumanInTheLoopMiddleware", "LLMCorrector", "Middleware", "MultiAgentOrchestrator",
+__all__ = ["Agent", "AgentTool", "ConversationalAgent", "FunctionCallingAgent", "HumanInTheLoopMiddleware", "LLMCorrector", "Middleware", "MultiAgentOrchestrator", "PIIMiddleware",
            "PlanAndExecuteAgent", "SelfCorrectingAgent", "SequentialAgentChain"]

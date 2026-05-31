@@ -7,6 +7,7 @@ human-in-the-loop, audit logging, rate limiting, and other cross-cutting
 behaviors without modifying Agent internals.
 """
 
+import re
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Optional
 
@@ -85,3 +86,65 @@ class HumanInTheLoopMiddleware(Middleware):
 
         approved, modified = self.approver(tool_name, tool_input)
         return (approved, modified)
+
+
+class PIIMiddleware(Middleware):
+    """Detect and redact personally identifiable information in tool inputs.
+
+    Before a tool executes, PIIMiddleware scans the input string for
+    sensitive data patterns and replaces them according to the chosen
+    strategy. The tool never sees the original sensitive data.
+
+    Args:
+        pii_type: Type of PII to detect. Supported: ``"email"``,
+            ``"credit_card"``.
+        strategy: How to handle detected PII.
+            - ``"redact"``: Replace entire match with ``[REDACTED]``.
+            - ``"mask"``: Preserve last 4 characters, replace earlier
+              characters with ``*``.
+
+    Examples:
+        >>> agent = Agent(
+        ...     llm=llm, tools=[send_email],
+        ...     middleware=[
+        ...         PIIMiddleware("email", strategy="redact"),
+        ...         PIIMiddleware("credit_card", strategy="mask"),
+        ...     ],
+        ... )
+        >>> agent.run("Send report to alice@example.com")
+        # send_email receives "Send report to [REDACTED]"
+    """
+
+    PATTERNS = {
+        "email": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        "credit_card": r"\b(?:\d[ -]*?){13,16}\b",
+    }
+
+    def __init__(self, pii_type: str, strategy: str = "redact") -> None:
+        if pii_type not in self.PATTERNS:
+            raise ValueError(
+                f"Unknown PII type '{pii_type}'. "
+                f"Supported: {list(self.PATTERNS.keys())}"
+            )
+        if strategy not in ("redact", "mask"):
+            raise ValueError(
+                f"Unknown strategy '{strategy}'. Supported: redact, mask"
+            )
+        self.pii_type = pii_type
+        self.strategy = strategy
+        self._pattern = re.compile(self.PATTERNS[pii_type])
+
+    def before_tool(self, tool_name: str, tool_input: str) -> tuple:
+        """Scan input and apply the chosen PII strategy."""
+        if self.strategy == "redact":
+            cleaned = self._pattern.sub("[REDACTED]", tool_input)
+        else:
+            cleaned = self._pattern.sub(self._mask, tool_input)
+        return (True, cleaned)
+
+    def _mask(self, match: re.Match) -> str:
+        """Preserve last 4 characters, replace the rest with *."""
+        text = match.group()
+        if len(text) > 4:
+            return "*" * (len(text) - 4) + text[-4:]
+        return "****"
