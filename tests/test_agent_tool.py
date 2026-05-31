@@ -163,97 +163,67 @@ def test_orchestrator_uses_agent_tool():
     assert "294" in result
 
 
-# ── Human-in-the-Loop (built-in approver) ──────────────────────
-def test_agent_approver_approves():
-    """Tool with requires_approval=True + approver returns True → executes."""
-    class SensitiveTool(Tool):
-        name = "sensitive"; description = "s"; requires_approval = True
-        def __init__(self): super().__init__()
-        def _run(self, input): return f"executed: {input}"
+# ── Human-in-the-Loop (middleware) ────────────────────────────
+from langchain.agents.middleware import HumanInTheLoopMiddleware
 
+def test_hitl_middleware_approves():
+    """Middleware approves → tool executes."""
+    hitl = HumanInTheLoopMiddleware(
+        interrupt_on={"sensitive": True},
+        approver=lambda name, args: (True, args),
+    )
     llm = FakeLLM(responses=[
         "Thought: use it.\nAction: sensitive[data]",
         "Thought: done.\nFinal Answer: executed: data",
     ])
     agent = Agent(
-        llm=llm, tools=[SensitiveTool()],
-        approver=lambda name, args: (True, args),
+        llm=llm, tools=[CalculatorTool()],
+        middleware=[hitl],
     )
     result = agent.run("test")
     assert result == "executed: data"
 
 
-def test_agent_approver_rejects():
-    """Approver returns False → tool is rejected, tool._run never called."""
+def test_hitl_middleware_rejects():
+    """Middleware rejects → tool never called."""
     call_log = []
-
     class SensitiveTool(Tool):
-        name = "sensitive"; description = "s"; requires_approval = True
+        name = "sensitive"; description = "s"
         def __init__(self): super().__init__()
         def _run(self, input):
             call_log.append(input)
             return f"executed: {input}"
 
-    llm = FakeLLM(responses=[
-        "Thought: use it.\nAction: sensitive[data]",
-        "Thought: rejected, I'll guess.\nFinal Answer: guess",
-    ])
-    agent = Agent(
-        llm=llm, tools=[SensitiveTool()],
+    hitl = HumanInTheLoopMiddleware(
+        interrupt_on={"sensitive": True},
         approver=lambda name, args: (False, args),
     )
-    agent.run("test")
-    assert len(call_log) == 0  # tool was never executed
-
-
-def test_agent_approver_modifies():
-    """Approver modifies input before execution."""
-    class SensitiveTool(Tool):
-        name = "sensitive"; description = "s"; requires_approval = True
-        def __init__(self): super().__init__()
-        def _run(self, input): return input.upper()
-
-    llm = FakeLLM(responses=[
-        "Thought: use it.\nAction: sensitive[hello]",
-        "Thought: done.\nFinal Answer: HELLO",
-    ])
-    agent = Agent(
-        llm=llm, tools=[SensitiveTool()],
-        approver=lambda name, args: (True, "HELLO"),
-    )
-    result = agent.run("test")
-    assert result == "HELLO"
-
-
-def test_agent_no_approver_no_interrupt():
-    """Tool has requires_approval but agent has no approver → executes."""
-    class SensitiveTool(Tool):
-        name = "sensitive"; description = "s"; requires_approval = True
-        def __init__(self): super().__init__()
-        def _run(self, input): return f"executed: {input}"
-
     llm = FakeLLM(responses=[
         "Thought: use it.\nAction: sensitive[data]",
-        "Thought: done.\nFinal Answer: executed: data",
+        "Thought: rejected.\nFinal Answer: guess",
     ])
-    agent = Agent(llm=llm, tools=[SensitiveTool()])  # no approver
-    result = agent.run("test")
-    assert result == "executed: data"
+    agent = Agent(llm=llm, tools=[SensitiveTool()], middleware=[hitl])
+    agent.run("test")
+    assert len(call_log) == 0
 
 
-def test_agent_normal_tool_no_approval():
-    """Normal tool (requires_approval=False) never triggers approver."""
+def test_hitl_middleware_not_in_interrupt_on():
+    """Tool not in interrupt_on → passes through."""
     approvals = []
+    def track(n, a):
+        approvals.append(n)
+        return (True, a)
+    hitl = HumanInTheLoopMiddleware(
+        interrupt_on={"send_email": True},
+        approver=track,
+    )
     llm = FakeLLM(responses=[
         "Thought: calc.\nAction: calculator[2+3]",
         "Thought: done.\nFinal Answer: 5",
     ])
-    def track(name, args):
-        approvals.append(name)
-        return (True, args)
-    agent = Agent(llm=llm, tools=[CalculatorTool()], approver=track)
+    agent = Agent(llm=llm, tools=[CalculatorTool()], middleware=[hitl])
     agent.run("2+3")
-    assert len(approvals) == 0  # Calculator doesn't require approval
+    assert len(approvals) == 0
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ into a single Agent.
 """
 
 import asyncio
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from langchain.agents.output_parser import (
     AgentAction,
@@ -19,6 +19,7 @@ from langchain.agents.output_parser import (
     AgentFinish,
     parse_agent_output,
 )
+from langchain.agents.middleware import Middleware
 from langchain.callbacks.base import CallbackHandler
 from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
@@ -77,7 +78,7 @@ class ConversationalAgent(CallbackMixin):
         max_iterations: int = 5,
         callbacks: Optional[List[CallbackHandler]] = None,
         description: str = "",
-        approver: Optional[Callable[[str, str], tuple]] = None,
+        middleware: Optional[List[Middleware]] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
@@ -86,7 +87,7 @@ class ConversationalAgent(CallbackMixin):
         self.max_iterations = max_iterations
         self.callbacks = callbacks or []
         self.description = description
-        self.approver = approver
+        self.middleware = middleware or []
         self._tool_map = {t.name: t for t in tools}
 
     def _build_tool_descriptions(self) -> str:
@@ -97,10 +98,10 @@ class ConversationalAgent(CallbackMixin):
         tool = self._tool_map.get(action.tool)
         if tool is None:
             return f"Error: tool '{action.tool}' not found"
-        if tool.requires_approval and self.approver:
-            approved, modified = self.approver(action.tool, action.tool_input)
-            if not approved:
-                return f"Tool '{action.tool}' rejected by human reviewer."
+        for mw in self.middleware:
+            proceed, modified = mw.before_tool(action.tool, action.tool_input)
+            if not proceed:
+                return f"Tool '{action.tool}' rejected by middleware."
             action.tool_input = modified
         return tool.run(action.tool_input)
 

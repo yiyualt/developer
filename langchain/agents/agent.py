@@ -7,7 +7,7 @@ is appended to the prompt for the next iteration.
 """
 
 import asyncio
-from typing import Callable, Dict, Generator, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from langchain.agents.output_parser import (
     AgentAction,
@@ -20,6 +20,8 @@ from langchain.callbacks.mixin import CallbackMixin
 from langchain.llms.base import LLM
 from langchain.memory.base import Memory
 from langchain.tools.base import Tool
+
+from langchain.agents.middleware import Middleware
 
 REACT_PROMPT_TEMPLATE = """You are an agent that uses ReAct (Reasoning + Acting) to answer questions.
 
@@ -80,7 +82,7 @@ class Agent(CallbackMixin):
         memory: Optional[Memory] = None,
         callbacks: Optional[List[CallbackHandler]] = None,
         description: str = "",
-        approver: Optional[Callable[[str, str], tuple]] = None,
+        middleware: Optional[List[Middleware]] = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
@@ -88,7 +90,7 @@ class Agent(CallbackMixin):
         self.memory = memory
         self.callbacks = callbacks or []
         self.description = description
-        self.approver = approver
+        self.middleware = middleware or []
         self._tool_map = {t.name: t for t in tools}
 
     def _build_tool_descriptions(self) -> str:
@@ -125,11 +127,10 @@ class Agent(CallbackMixin):
         tool = self._tool_map.get(action.tool)
         if tool is None:
             return f"Error: tool '{action.tool}' not found. Available: {list(self._tool_map.keys())}"
-        # Human-in-the-loop: if tool requires approval and approver is set
-        if tool.requires_approval and self.approver:
-            approved, modified = self.approver(action.tool, action.tool_input)
-            if not approved:
-                return f"Tool '{action.tool}' rejected by human reviewer."
+        for mw in self.middleware:
+            proceed, modified = mw.before_tool(action.tool, action.tool_input)
+            if not proceed:
+                return f"Tool '{action.tool}' rejected by middleware."
             action.tool_input = modified
         return tool.run(action.tool_input)
 

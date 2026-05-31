@@ -1,40 +1,37 @@
 Human-in-the-Loop Philosophy
 ============================
 
-Agent 是全自动的——LLM 决定做什么，工具立刻执行。但某些操作
-不应该全自动：发送邮件、支付、删除数据库。Human-in-the-Loop
-在工具执行前插入人工审批节点。
+Agent 是全自动的。但某些操作不应该全自动——发送邮件、支付、
+删除数据。Middleware 系统在工具执行前插入可编程的检查点。
 
-Two halves of the contract
----------------------------
+Why middleware, not tool-side config
+-------------------------------------
 
-HITL 是 tool 和 agent 之间的双向约定：
+最初我们把审批配置放在 Tool 上（``requires_approval = True``）。
+但这有两个问题：
+
+1. Tool 不知道自己什么时候"危险"——发送邮件在一个场景下
+   需要审批，在另一个场景下不需要。配置应该在 Agent 层，不在 Tool 层。
+2. Tool 需要感知 Middleware 的存在——Tool 是独立组件，
+   不应该耦合审批逻辑。
+
+Middleware 解决了这两个问题：配置全部在 ``HumanInTheLoopMiddleware``
+上，Agent 遍历 middleware 列表调用 ``before_tool`` 钩子。
+Tool 完全不知道 middleware 的存在。
+
+The middleware list
+-------------------
+
+Agent 接受 ``middleware=[...]`` 列表，按顺序执行：
 
 .. code-block:: text
 
-   Tool 侧:  requires_approval = True   → "我需要审批"
-   Agent 侧: approver = ask_user       → "我有审批人"
+   _execute_tool(action):
+     for each middleware in self.middleware:
+       proceed, modified = mw.before_tool(tool_name, input)
+       if not proceed: return "rejected"
+       input = modified
+     tool.run(input)
 
-   两者都设置时才生效。缺一不可：
-   - tool 声明了但 agent 没 approver → 直接执行
-   - agent 有 approver 但 tool 没声明 → 直接执行
-
-Why built-in, not middleware?
-------------------------------
-
-第一个版本用了独立的 HumanInTheLoopMiddleware 包装类。
-但它有三个问题：
-
-1. 外部 monkey-patch Agent._execute_tool —— 脆弱
-2. 和 Agent/ConversationalAgent 是两个类 —— 用户要学两个 API
-3. 审批逻辑和 Agent 循环脱节 —— 审批失败后 Agent 不知道发生了什么
-
-内置方案把 approver 作为 Agent 的一个可选参数。Agent 本身
-负责审批流程——工具声明需求，Agent 执行检查。不需要额外的类。
-
-Why not in callbacks?
-----------------------
-
-Callbacks 观察。HITL 控制。一个 callback 可以记录"工具被调用了"，
-但不能说"别调这个工具"。HITL 需要控制权——拒绝或修改调用——这超出了
-callback 的能力范围。
+多个 middleware 可以堆叠——审计日志 + 人工审批 + 未来更多类型，
+都在同一个列表里。

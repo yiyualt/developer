@@ -25,7 +25,6 @@ class Tool(ABC, CallbackMixin):
 
     name: str = ""
     description: str = ""
-    requires_approval: bool = False
 
     def __init__(self, callbacks: Optional[List[CallbackHandler]] = None) -> None:
         self.callbacks = callbacks or []
