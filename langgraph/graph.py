@@ -122,13 +122,26 @@ class StateGraph:
         """
         self.conditional_edges[from_node] = (router, mapping)
 
-    def compile(self) -> "CompiledGraph":
+    def compile(
+        self,
+        interrupt_before: Optional[List[str]] = None,
+    ) -> "CompiledGraph":
         """Compile the graph into a runnable application.
+
+        Args:
+            interrupt_before: Node names to pause execution before.
+                When stream() reaches one of these nodes, it yields
+                the current state and stops, allowing human review
+                before resuming with invoke().
 
         Returns:
             A CompiledGraph instance ready for invocation.
         """
-        return CompiledGraph(self.nodes, self.edges, self.conditional_edges, self._channels)
+        return CompiledGraph(
+            self.nodes, self.edges, self.conditional_edges,
+            self._channels,
+            interrupt_before=set(interrupt_before or []),
+        )
 
 
 class CompiledGraph:
@@ -144,11 +157,13 @@ class CompiledGraph:
         edges: Dict[str, List[str]],
         conditional_edges: Dict[str, Tuple[Callable, dict]],
         channels: Dict[str, Channel],
+        interrupt_before: Optional[Set[str]] = None,
     ) -> None:
         self._nodes = nodes
         self._edges = edges
         self._conditional_edges = conditional_edges
         self._channels = channels
+        self._interrupt_before = interrupt_before or set()
 
     def _init_channels(self, input_state: dict) -> None:
         """Load initial state into channels."""
@@ -184,9 +199,15 @@ class CompiledGraph:
         Each superstep yields the current state dict. This enables
         real-time UIs, debugging, and incremental processing.
 
+        When ``interrupt_before`` nodes are reached, execution pauses
+        and the caller can modify the checkpoint before resuming.
+
         Args:
             input_state: Initial state dict.
-            config: Optional dict with ``recursion_limit`` (default 25).
+            config: Optional dict with:
+                - ``recursion_limit`` (default 25)
+                - ``start_from`` — set of node names to start from
+                  (used internally for resume; caller sets to None)
 
         Yields:
             State dicts — one per superstep, starting with the
@@ -202,12 +223,22 @@ class CompiledGraph:
         self._init_channels(input_state)
 
         active: Set[str] = set()
-        if START in self._edges:
+        if config.get("start_from"):
+            active = config["start_from"]
+        elif START in self._edges:
             active = set(self._edges[START])
 
         for i in range(limit):
             if not active:
                 break
+
+            # Check interrupt-before: if any active node is in the set, pause
+            # Skip check when resuming (start_from skips the already-interrupted nodes)
+            if config.get("start_from"):
+                pass  # resuming — carry on
+            elif self._interrupt_before & active:
+                self._pending = active  # save for resume
+                break  # yield below will give caller the checkpoint
 
             # Run all active nodes, collecting state updates
             state = self._read_state()
@@ -250,6 +281,11 @@ class CompiledGraph:
         """Execute the graph and return all state snapshots.
 
         Convenience wrapper around ``stream()`` that collects all
-        snapshots into a list.
+        snapshots into a list. If the previous run was interrupted,
+        automatically resumes from the interrupt point.
         """
+        config = config or {}
+        if getattr(self, "_pending", None):
+            config["start_from"] = self._pending
+            self._pending = None
         return list(self.stream(input_state, config))
