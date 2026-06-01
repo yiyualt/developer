@@ -77,5 +77,5 @@ Conditional edges — state-based routing
    )
    graph.add_edge("finish", "__end__")
 
-   result = graph.compile().invoke({"counter": 0})
+   result = graph.compile().invoke({"counter": 0}, config={"recursion_limit": 10})
    print(result)  # {'counter': 3, 'result': 'done'}

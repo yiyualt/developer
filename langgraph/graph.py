@@ -178,23 +178,29 @@ class CompiledGraph:
             if channel.value is not None
         }
 
-    def invoke(self, input_state: dict) -> dict:
+    def invoke(self, input_state: dict, config: dict = None) -> dict:
         """Execute the graph with the given initial state.
 
         Args:
             input_state: Initial state dict.
+            config: Optional dict with ``recursion_limit`` (default 25).
 
         Returns:
             The final state after all nodes have executed.
+
+        Raises:
+            RecursionError: If the superstep count exceeds the limit.
         """
+        config = config or {}
+        limit = config.get("recursion_limit", 25)
+
         self._init_channels(input_state)
 
         active: Set[str] = set()
         if START in self._edges:
             active = set(self._edges[START])
 
-        max_iterations = 100
-        for _ in range(max_iterations):
+        for i in range(limit):
             if not active:
                 break
 
@@ -226,5 +232,12 @@ class CompiledGraph:
                         next_active.add(target)
 
             active = next_active
+        else:
+            # Loop exhausted — limit reached without hitting END
+            state = self._read_state()
+            raise RecursionError(
+                f"Recursion limit of {limit} reached without reaching END. "
+                f"Last state: {state}"
+            )
 
         return self._read_state()

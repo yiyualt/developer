@@ -163,6 +163,37 @@ def test_mixed_fixed_and_conditional():
     assert result["c_called"] is True  # both b and c executed
 
 
+# ── Recursion limit ──────────────────────────────────────────────
+def test_custom_recursion_limit():
+    """Stops at recursion limit, raises RecursionError."""
+    graph = StateGraph(dict)
+    graph.add_node("loop", lambda s: {"x": s.get("x", 0) + 1})
+    graph.add_edge("__start__", "loop")
+    graph.add_conditional_edges(
+        "loop", lambda s: "go", {"go": "loop"},  # infinite loop
+    )
+
+    try:
+        graph.compile().invoke({"x": 0}, config={"recursion_limit": 3})
+        assert False, "Should raise"
+    except RecursionError:
+        pass  # expected
+
+
+def test_recursion_limit_exceeded():
+    """RecursionError raised when limit is exceeded."""
+    graph = StateGraph(dict)
+    graph.add_node("loop", lambda s: {"x": 1})
+    graph.add_edge("__start__", "loop")
+    graph.add_conditional_edges("loop", lambda s: "loop", {"loop": "loop"})
+
+    try:
+        graph.compile().invoke({}, config={"recursion_limit": 3})
+        assert False, "Should have raised RecursionError"
+    except RecursionError as e:
+        assert "Recursion limit" in str(e)
+
+
 if __name__ == "__main__":
     import sys
     fns = [n for n in dir() if n.startswith("test_")]
