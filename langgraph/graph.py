@@ -6,7 +6,7 @@ node outputs are merged by per-field strategies (append, replace, add)
 rather than raw dict overwrite.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Set, get_type_hints
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, get_type_hints
 
 from langgraph.channels import Channel, replace
 
@@ -73,6 +73,7 @@ class StateGraph:
     def __init__(self, state_schema: Any = dict) -> None:
         self.nodes: Dict[str, Callable] = {}
         self.edges: Dict[str, List[str]] = {}
+        self.conditional_edges: Dict[str, Tuple[Callable, dict]] = {}
         self.state_schema = state_schema
         self._channels = _parse_schema(state_schema)
 
@@ -97,13 +98,37 @@ class StateGraph:
             self.edges[from_node] = []
         self.edges[from_node].append(to_node)
 
+    def add_conditional_edges(
+        self, from_node: str, router: Callable, mapping: Dict[str, str]
+    ) -> None:
+        """Add edges that route dynamically based on state.
+
+        After ``from_node`` executes, ``router(state)`` is called and
+        must return a key. The key is looked up in ``mapping`` to
+        find the target node. Keys that map to ``END`` terminate.
+
+        Args:
+            from_node: Source node name.
+            router: ``(state: dict) -> str`` — returns a routing key.
+            mapping: ``{key: target_node}`` — maps routing keys to
+                target node names (or END).
+
+        Example:
+            >>> graph.add_conditional_edges(
+            ...     "agent",
+            ...     lambda s: "continue" if s.get("next") else "end",
+            ...     {"continue": "agent", "end": END},
+            ... )
+        """
+        self.conditional_edges[from_node] = (router, mapping)
+
     def compile(self) -> "CompiledGraph":
         """Compile the graph into a runnable application.
 
         Returns:
             A CompiledGraph instance ready for invocation.
         """
-        return CompiledGraph(self.nodes, self.edges, self._channels)
+        return CompiledGraph(self.nodes, self.edges, self.conditional_edges, self._channels)
 
 
 class CompiledGraph:
@@ -117,10 +142,12 @@ class CompiledGraph:
     def __init__(
         self, nodes: Dict[str, Callable],
         edges: Dict[str, List[str]],
+        conditional_edges: Dict[str, Tuple[Callable, dict]],
         channels: Dict[str, Channel],
     ) -> None:
         self._nodes = nodes
         self._edges = edges
+        self._conditional_edges = conditional_edges
         self._channels = channels
 
     def _init_channels(self, input_state: dict) -> None:
@@ -183,13 +210,20 @@ class CompiledGraph:
             # Merge all outputs via channels (with reducers)
             self._merge_updates(outputs)
 
-            # Find next active nodes
+            # Find next active nodes — use updated state after merging
+            state = self._read_state()
             next_active: Set[str] = set()
             for node_name in active:
                 if node_name in self._edges:
                     for target in self._edges[node_name]:
                         if target != END:
                             next_active.add(target)
+                if node_name in self._conditional_edges:
+                    router, mapping = self._conditional_edges[node_name]
+                    key = router(state)
+                    target = mapping[key]
+                    if target != END:
+                        next_active.add(target)
 
             active = next_active
 

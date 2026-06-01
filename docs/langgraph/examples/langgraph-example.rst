@@ -56,3 +56,26 @@ Multi-field state
    result = graph.compile().invoke({"messages": [], "name": ""})
    print(result)
    # {'messages': ['StateGraph works!'], 'name': 'LangGraph'}
+
+Conditional edges — state-based routing
+----------------------------------------
+
+.. code-block:: python
+
+   from langgraph import StateGraph
+
+   graph = StateGraph(dict)
+
+   graph.add_node("work", lambda s: {"counter": s.get("counter", 0) + 1})
+   graph.add_node("finish", lambda s: {"result": "done"})
+
+   graph.add_edge("__start__", "work")
+   graph.add_conditional_edges(
+       "work",
+       lambda s: "loop" if s["counter"] < 3 else "stop",
+       {"loop": "work", "stop": "finish"},
+   )
+   graph.add_edge("finish", "__end__")
+
+   result = graph.compile().invoke({"counter": 0})
+   print(result)  # {'counter': 3, 'result': 'done'}

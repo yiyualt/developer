@@ -106,6 +106,63 @@ def test_default_schema():
     assert result["y"] == 99  # "b" overwrote "a"
 
 
+# ── Conditional edges ────────────────────────────────────────────
+def test_conditional_edge():
+    """Router decides next node based on state."""
+    graph = StateGraph(dict)
+    graph.add_node("start", lambda s: {"value": s.get("value", 0) + 1})
+    graph.add_node("done", lambda s: {"result": "finished"})
+
+    graph.add_edge("__start__", "start")
+    graph.add_conditional_edges(
+        "start",
+        lambda s: "continue" if s["value"] < 3 else "stop",
+        {"continue": "start", "stop": "done"},
+    )
+    graph.add_edge("done", "__end__")
+
+    result = graph.compile().invoke({"value": 0})
+    assert result["result"] == "finished"
+    assert result["value"] == 3  # 0→1→2→3 (3 makes 3<3 False)
+
+
+def test_conditional_edge_to_end():
+    """Router maps to END — terminates."""
+    graph = StateGraph(dict)
+    graph.add_node("check", lambda s: {"checked": True})
+    graph.add_edge("__start__", "check")
+    graph.add_conditional_edges(
+        "check",
+        lambda s: "done",
+        {"done": "__end__"},
+    )
+
+    result = graph.compile().invoke({})
+    assert result["checked"] is True
+
+
+def test_mixed_fixed_and_conditional():
+    """Node with both fixed edge and conditional edge."""
+    graph = StateGraph(dict)
+    graph.add_node("a", lambda s: {"x": 1})
+    graph.add_node("b", lambda s: {"b_called": True})
+    graph.add_node("c", lambda s: {"c_called": True})
+
+    graph.add_edge("__start__", "a")
+    graph.add_edge("a", "b")  # fixed: always go to b
+    graph.add_conditional_edges(
+        "a",
+        lambda s: "c",
+        {"c": "c"},  # conditional: also go to c
+    )
+    graph.add_edge("b", "__end__")
+    graph.add_edge("c", "__end__")
+
+    result = graph.compile().invoke({})
+    assert result["b_called"] is True
+    assert result["c_called"] is True  # both b and c executed
+
+
 if __name__ == "__main__":
     import sys
     fns = [n for n in dir() if n.startswith("test_")]
