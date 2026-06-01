@@ -6,7 +6,7 @@ node outputs are merged by per-field strategies (append, replace, add)
 rather than raw dict overwrite.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, get_type_hints
+from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, get_type_hints
 
 from langgraph.channels import Channel, replace
 
@@ -178,17 +178,19 @@ class CompiledGraph:
             if channel.value is not None
         }
 
-    def invoke(self, input_state: dict, config: dict = None) -> list:
-        """Execute the graph, returning state snapshots at each step.
+    def stream(self, input_state: dict, config: dict = None) -> Generator:
+        """Execute the graph, yielding state snapshots as they happen.
+
+        Each superstep yields the current state dict. This enables
+        real-time UIs, debugging, and incremental processing.
 
         Args:
             input_state: Initial state dict.
             config: Optional dict with ``recursion_limit`` (default 25).
 
-        Returns:
-            A list of state dicts — one snapshot per superstep,
-            starting with the initial state and ending with the
-            final state.
+        Yields:
+            State dicts — one per superstep, starting with the
+            initial state.
 
         Raises:
             RecursionError: If the superstep count exceeds the limit.
@@ -196,7 +198,7 @@ class CompiledGraph:
         config = config or {}
         limit = config.get("recursion_limit", 25)
 
-        snapshots: List[dict] = [dict(input_state)]
+        yield dict(input_state)
         self._init_channels(input_state)
 
         active: Set[str] = set()
@@ -219,8 +221,8 @@ class CompiledGraph:
             # Merge all outputs via channels (with reducers)
             self._merge_updates(outputs)
 
-            # Snapshot after this superstep
-            snapshots.append(self._read_state())
+            # Yield after this superstep
+            yield self._read_state()
 
             # Find next active nodes — use updated state after merging
             state = self._read_state()
@@ -239,10 +241,15 @@ class CompiledGraph:
 
             active = next_active
         else:
-            snapshots.append(self._read_state())
+            yield self._read_state()
             raise RecursionError(
-                f"Recursion limit of {limit} reached without reaching END. "
-                f"Last state: {snapshots[-1]}"
+                f"Recursion limit of {limit} reached without reaching END."
             )
 
-        return snapshots
+    def invoke(self, input_state: dict, config: dict = None) -> list:
+        """Execute the graph and return all state snapshots.
+
+        Convenience wrapper around ``stream()`` that collects all
+        snapshots into a list.
+        """
+        return list(self.stream(input_state, config))
