@@ -178,15 +178,17 @@ class CompiledGraph:
             if channel.value is not None
         }
 
-    def invoke(self, input_state: dict, config: dict = None) -> dict:
-        """Execute the graph with the given initial state.
+    def invoke(self, input_state: dict, config: dict = None) -> list:
+        """Execute the graph, returning state snapshots at each step.
 
         Args:
             input_state: Initial state dict.
             config: Optional dict with ``recursion_limit`` (default 25).
 
         Returns:
-            The final state after all nodes have executed.
+            A list of state dicts — one snapshot per superstep,
+            starting with the initial state and ending with the
+            final state.
 
         Raises:
             RecursionError: If the superstep count exceeds the limit.
@@ -194,6 +196,7 @@ class CompiledGraph:
         config = config or {}
         limit = config.get("recursion_limit", 25)
 
+        snapshots: List[dict] = [dict(input_state)]
         self._init_channels(input_state)
 
         active: Set[str] = set()
@@ -216,6 +219,9 @@ class CompiledGraph:
             # Merge all outputs via channels (with reducers)
             self._merge_updates(outputs)
 
+            # Snapshot after this superstep
+            snapshots.append(self._read_state())
+
             # Find next active nodes — use updated state after merging
             state = self._read_state()
             next_active: Set[str] = set()
@@ -233,11 +239,10 @@ class CompiledGraph:
 
             active = next_active
         else:
-            # Loop exhausted — limit reached without hitting END
-            state = self._read_state()
+            snapshots.append(self._read_state())
             raise RecursionError(
                 f"Recursion limit of {limit} reached without reaching END. "
-                f"Last state: {state}"
+                f"Last state: {snapshots[-1]}"
             )
 
-        return self._read_state()
+        return snapshots

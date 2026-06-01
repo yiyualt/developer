@@ -36,8 +36,9 @@ Compile and run
 .. code-block:: python
 
    app = graph.compile()
-   result = app.invoke({"messages": []})
-   print(result)  # {'messages': ['Hello World!']}
+   snapshots = app.invoke({"messages": []})
+   print(snapshots[-1])  # {'messages': ['Hello World!']}  — final state
+   print(snapshots[0])   # {'messages': []}                — initial state
 
 What's next?
 ------------

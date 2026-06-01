@@ -30,7 +30,8 @@ Hello World graph
    app = graph.compile()
    result = app.invoke({"messages": []})
    print(result)
-   # {'messages': ['Hello', 'How are you?']}
+   # [{'messages': []}, {'messages': ['Hello']}, {'messages': ['Hello', 'How are you?']}]
+   #  Initial state       After superstep 1          After superstep 2 (final)
 
 Multi-field state
 -----------------
@@ -54,7 +55,7 @@ Multi-field state
    graph.add_edge("add_msg", "__end__")
 
    result = graph.compile().invoke({"messages": [], "name": ""})
-   print(result)
+   print(result[-1])  # final state
    # {'messages': ['StateGraph works!'], 'name': 'LangGraph'}
 
 Conditional edges — state-based routing
@@ -78,4 +79,5 @@ Conditional edges — state-based routing
    graph.add_edge("finish", "__end__")
 
    result = graph.compile().invoke({"counter": 0}, config={"recursion_limit": 10})
-   print(result)  # {'counter': 3, 'result': 'done'}
+   print(result[-1])  # {'counter': 3, 'result': 'done'}
+   print(len(result)) # 5 snapshots: initial + 3 loops + done

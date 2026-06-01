@@ -22,7 +22,7 @@ def test_simple_linear_graph():
     graph.add_edge("greet", "__end__")
 
     result = graph.compile().invoke({"messages": []})
-    assert result["messages"] == ["Hello"]
+    assert result[-1]["messages"] == ["Hello"]
 
 
 def test_two_nodes():
@@ -35,7 +35,7 @@ def test_two_nodes():
 
     result = graph.compile().invoke({"messages": []})
     # replace reducer: "b" overwrites "a"
-    assert result["messages"] == ["B"]
+    assert result[-1]["messages"] == ["B"]
 
 
 # ── Append reducer ──────────────────────────────────────────────
@@ -53,7 +53,7 @@ def test_append_reducer_accumulates():
     graph.add_edge("b", "__end__")
 
     result = graph.compile().invoke({"messages": []})
-    assert result["messages"] == ["A", "B"]
+    assert result[-1]["messages"] == ["A", "B"]
 
 
 def test_append_with_initial_value():
@@ -68,7 +68,7 @@ def test_append_with_initial_value():
     graph.add_edge("a", "__end__")
 
     result = graph.compile().invoke({"messages": ["existing"]})
-    assert result["messages"] == ["existing", "hello"]
+    assert result[-1]["messages"] == ["existing", "hello"]
 
 
 # ── Multiple fields ─────────────────────────────────────────────
@@ -87,8 +87,8 @@ def test_multiple_fields():
     graph.add_edge("b", "__end__")
 
     result = graph.compile().invoke({"messages": [], "name": ""})
-    assert result["messages"] == ["A", "B"]  # append
-    assert result["name"] == "Bob"           # replace
+    assert result[-1]["messages"] == ["A", "B"]  # append
+    assert result[-1]["name"] == "Bob"            # replace
 
 
 # ── Default schema (dict) ───────────────────────────────────────
@@ -102,8 +102,8 @@ def test_default_schema():
     graph.add_edge("b", "__end__")
 
     result = graph.compile().invoke({"x": 0})
-    assert result["x"] == 1   # from "a"
-    assert result["y"] == 99  # "b" overwrote "a"
+    assert result[-1]["x"] == 1   # from "a"
+    assert result[-1]["y"] == 99  # "b" overwrote "a"
 
 
 # ── Conditional edges ────────────────────────────────────────────
@@ -122,8 +122,8 @@ def test_conditional_edge():
     graph.add_edge("done", "__end__")
 
     result = graph.compile().invoke({"value": 0})
-    assert result["result"] == "finished"
-    assert result["value"] == 3  # 0→1→2→3 (3 makes 3<3 False)
+    assert result[-1]["result"] == "finished"
+    assert result[-1]["value"] == 3  # 0→1→2→3 (3 makes 3<3 False)
 
 
 def test_conditional_edge_to_end():
@@ -138,7 +138,7 @@ def test_conditional_edge_to_end():
     )
 
     result = graph.compile().invoke({})
-    assert result["checked"] is True
+    assert result[-1]["checked"] is True
 
 
 def test_mixed_fixed_and_conditional():
@@ -159,8 +159,8 @@ def test_mixed_fixed_and_conditional():
     graph.add_edge("c", "__end__")
 
     result = graph.compile().invoke({})
-    assert result["b_called"] is True
-    assert result["c_called"] is True  # both b and c executed
+    assert result[-1]["b_called"] is True
+    assert result[-1]["c_called"] is True  # both b and c executed
 
 
 # ── Recursion limit ──────────────────────────────────────────────
@@ -192,6 +192,22 @@ def test_recursion_limit_exceeded():
         assert False, "Should have raised RecursionError"
     except RecursionError as e:
         assert "Recursion limit" in str(e)
+
+
+# ── Checkpoint snapshots ──────────────────────────────────────────
+def test_checkpoint_snapshots():
+    """invoke returns list of snapshots — one per superstep."""
+    graph = StateGraph(dict)
+    graph.add_node("a", lambda s: {"x": 1})
+    graph.add_node("b", lambda s: {"x": 2})
+    graph.add_edge("__start__", "a")
+    graph.add_edge("a", "b")
+    graph.add_edge("b", "__end__")
+
+    result = graph.compile().invoke({"x": 0})
+    assert len(result) >= 2  # at least initial + final
+    assert result[0] == {"x": 0}  # initial state preserved
+    assert result[-1]["x"] == 2   # final state accessible
 
 
 if __name__ == "__main__":
