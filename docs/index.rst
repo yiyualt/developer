@@ -1,17 +1,22 @@
-LangChain Documentation
-=======================
+LangChain & LangGraph Documentation
+=====================================
 
-Building applications with LLMs through composability.
-
-LangChain provides a framework for developing applications powered by
-large language models. This documentation follows the project's growth
-from its earliest design to a mature framework.
+Two frameworks, one project — from high-level chains to low-level graph orchestration.
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Contents
+   :maxdepth: 2
+   :caption: LangChain
 
-   tutorials/index
-   notes/index
-   examples/index
-   api/index
+   langchain/tutorials/index
+   langchain/notes/index
+   langchain/examples/index
+   langchain/api/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: LangGraph
+
+   langgraph/tutorials/index
+   langgraph/notes/index
+   langgraph/examples/index
+   langgraph/api/index

@@ -1,10 +1,34 @@
-# LangChain 项目指引
+# LangChain → LangGraph 项目指引
 
-## 项目目标
+## 项目目标第一阶段（已完成）
 
-模拟 LangChain 的真实发展历史，在构建过程中体验设计、理念和技术的演进。
-不是照抄最终版 LangChain，而是按时间线还原每个版本的增量变化，
-在每一步中感受"为什么这样设计"的决策过程。
+模拟 LangChain 的真实发展历史，从 v0.0.1 到 v0.0.27，构建过程中体验设计、
+理念和技术的演进。已完成 27 个版本，打 tag `v0.0.27-langchain-final`。
+
+## 项目目标 —— 第二阶段：LangGraph
+
+从当前 LangChain 代码基础上，模拟 **LangGraph** 的真实发展历史。
+LangGraph 是 LangChain 的"低层编排框架"——从高层的 Chain/Agent 逻辑
+下沉到低层的图执行、状态管理、持久化、Human-in-the-Loop。
+
+核心差异：
+- LangChain: "这个 Chain 怎么组合？" "这个 Agent 怎么推理？"
+- LangGraph: "计算图怎么执行？" "状态怎么持久化？" "节点间怎么流数据？"
+
+分支: `langgraph`（当前），`main` 分支保存完整的 LangChain 工作。
+
+## LangGraph 演进路线
+
+从真实 LangGraph 的历史出发：
+
+1. **StateGraph** — 状态图核心：Node + Edge + State，编译为 Pregel-style 执行器
+2. **Checkpoint** — 持久化状态快照，支持 pause/resume/retry
+3. **Streaming** — 图执行时流式输出中间状态
+4. **Human-in-the-Loop** — 中断执行，人工介入后恢复
+5. **Conditional Edges** — 基于状态的动态路由
+6. **Subgraphs** — 图的嵌套组合
+7. **Agent as Graph** — 用 Graph 重新实现 Agent 循环
+8. **ToolNode** — 将 Tool 包装为图的节点
 
 ## 文档风格
 
@@ -13,6 +37,7 @@ PyTorch 风格文档体系：
 - 四层结构：tutorials / notes / examples / api
 - Notes culture：每个重要设计决策都有 philosophy 文档
 - 全量构建时必须 `rm -rf docs/_build && sphinx-build`，避免增量构建导致侧边栏缺失
+- **全部英文**：所有 .rst 文档内容必须是英文，不可混用中文
 
 ## LLM 配置
 
@@ -21,29 +46,11 @@ PyTorch 风格文档体系：
 - 配置在 .env (gitignored): LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
 - Git push 用 HTTPS + 代理 (127.0.0.1:7897)
 
-## 版本演进路线
+## LangChain 版本（已完成，tag: v0.0.27-langchain-final）
 
-已完成（19 个版本）：
-1. **v0.0.1 Core Primitives** — PromptTemplate, LLM ABC, LLMChain
-2. **OpenAI LLM** — DashScope/glm-5.1 连接，.env 配置
-3. **OutputParser** — OutputParser ABC, JsonOutputParser, ListOutputParser
-4. **SequentialChain** — 多步串联，key-based 数据流，LLMChain.output_keys
-5. **Agent (ReAct)** — Tool ABC, Agent, AgentOutputParser, Calculator/Search/PythonREPL
-6. **Memory** — Memory ABC, ConversationBufferMemory, ConversationBufferWindowMemory
-7. **Retrieval / RAG** — Document, DocumentLoader, TextLoader, TextSplitter, Embeddings, VectorStore, RetrievalChain
-8. **Router Chain** — RouterChain ABC, LLMRouterChain, ChainDestination, 动态注入模式
-9. **ConversationSummaryMemory** — LLM 增量摘要压缩
-10. **Callback / Tracing** — CallbackHandler ABC, StdOutCallbackHandler, 回调集成
-11. **Streaming** — LLM stream(), LLMChain/Agent stream(), on_llm_new_token
-12. **Async / 并发** — LLM agenerate(), LLMChain apply_async(), asyncio.gather
-13. **AgentTool** — Agent 包装为 Tool，递归组合性
-14. **PlanAndExecuteAgent** — 目标 → 计划 → 逐步执行
-15. **@tool 装饰器** — 函数自动转为 Tool 实例
-16. **Agent Orchestration** — MultiAgentOrchestrator, SequentialAgentChain
-17. **Chat Model** — SystemMessage/HumanMessage/AIMessage, ChatPromptTemplate, generate_messages()
-18. **Memory↔Chat Bridge** — Memory.load_messages() 返回消息列表
-19. **Self-Correction** — LLMCorrector, SelfCorrectingAgent
-20. **Callback Consistency** — CallbackMixin 提取，全组件统一回调支持
+共 27 个版本，覆盖 Chain → Agent → Memory → RAG → Router → Streaming →
+Async → AgentTool → PlanExecute → Orchestration → Chat Model →
+Self-Correction → Callback → LCEL → Function Calling → Middleware 栈。详见 `main` 分支。
 
 ## 架构约定
 

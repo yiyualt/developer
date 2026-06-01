@@ -1,32 +1,22 @@
+from langgraph import StateGraph
+from typing import Annotated
+from langgraph.channels import append
 
-from langchain import Agent, OpenAI, CalculatorTool
-from langchain.tools.base import Tool
+# 1. Define state schema
+class State:
+    messages: Annotated[list, append]
 
-# Tool declares it needs approval
-class SendEmailTool(Tool):
-    name = "send_email"
-    description = "Sends an email. Input: recipient and body."
-    requires_approval = True
+# 2. Create graph and add nodes
+graph = StateGraph(State)
+graph.add_node("greet", lambda s: {"messages": ["Hello"]})
+graph.add_node("ask", lambda s: {"messages": ["How are you?"]})
 
-    def _run(self, input: str) -> str:
-        return f"Email sent to {input}"
+# 3. Add edges (control flow)
+graph.add_edge("__start__", "greet")
+graph.add_edge("greet", "ask")
+graph.add_edge("ask", "__end__")
 
-# Terminal-based approver
-def terminal_approver(tool_name, arguments):
-    print(f"Agent wants to call: {tool_name}[{arguments}]")
-    answer = input("Approve? [y/N/modified_input]: ")
-    if answer.lower() == "y":
-        return True, arguments
-    elif answer:
-        return True, answer
-    return False, arguments
-
-llm = OpenAI()
-agent = Agent(
-    llm=llm,
-    tools=[CalculatorTool(), SendEmailTool()],
-    approver=terminal_approver,
-)
-# Calculator runs without approval (requires_approval=False)
-# SendEmailTool pauses for human confirmation
-print(agent.run("Calculate 42*7 and email the result to alice@example.com"))
+# 4. Compile and run
+app = graph.compile()
+result = app.invoke({"messages": []})
+print(result)
